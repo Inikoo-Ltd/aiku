@@ -4142,6 +4142,31 @@ test('the goods price request dialog shows the master product cost and margin at
         ->and($dialogAsset($asked)['cost'])->toEqual(round($effectiveCost, 2))
         ->and($dialogAsset($asked)['cost_at_new_price'])->toEqual($expectedCost);
 
+    $supplierProduct  = $line->supplierProduct;
+    $lastCostChange   = fn () => collect($dialog()['requests'])->firstWhere('id', $line->id)['last_cost_change'];
+    $supplierProduct->audits()->delete();
+    expect($lastCostChange())->toMatchArray(['changed_at' => null, 'old_cost' => null, 'new_cost' => null])
+        ->and($lastCostChange()['since'])->not->toBeNull();
+
+    $supplierAuditingWasDisabled = SupplierProduct::$auditingDisabled;
+    SupplierProduct::enableAuditing();
+    $oldSupplierCost = (float) $supplierProduct->cost;
+    UpdateSupplierProduct::make()->action($supplierProduct, ['cost' => $oldSupplierCost + 7]);
+    UpdateSupplierProduct::make()->action($supplierProduct->refresh(), ['name' => 'Renamed '.uniqid()]);
+    $changed = $lastCostChange();
+    expect($changed['changed_at'])->not->toBeNull()
+        ->and($changed['changed_after'])->toBeNull()
+        ->and($changed['old_cost'])->toEqual($oldSupplierCost)
+        ->and($changed['new_cost'])->toEqual($oldSupplierCost + 7);
+
+    $supplierProduct->refresh()->updateQuietly(['cost' => $oldSupplierCost + 9]);
+    $unrecorded = $lastCostChange();
+    expect($unrecorded['changed_at'])->toBeNull()
+        ->and($unrecorded['changed_after'])->not->toBeNull()
+        ->and($unrecorded['old_cost'])->toEqual($oldSupplierCost + 7)
+        ->and($unrecorded['new_cost'])->toEqual($oldSupplierCost + 9);
+    SupplierProduct::$auditingDisabled = $supplierAuditingWasDisabled;
+
     AnswerPurchaseOrderTransactionPriceChange::make()->action($line->refresh(), ['answer' => PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED->value]);
     $accepted = $dialog();
     expect($accepted['new_price'])->toMatchArray(['state' => 'accepted', 'purchase_order' => $order->reference])

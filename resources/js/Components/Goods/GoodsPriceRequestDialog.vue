@@ -27,6 +27,15 @@ import { routeType } from "@/types/route"
 
 type Answer = "accepted" | "rejected" | "adjusted"
 
+interface LastCostChange {
+    changed_at: string | null
+    changed_after: string | null
+    old_cost: number | null
+    new_cost: number | null
+    currency: string | null
+    since: string | null
+}
+
 interface PriceRequest {
     id: number
     organisation: string
@@ -43,6 +52,7 @@ interface PriceRequest {
     note: string | null
     asked_by: string | null
     asked_at: string | null
+    last_cost_change: LastCostChange | null
     master_costs_at_new_price: Record<number, number>
     can_update_supplier_cost: boolean
     answer_route: routeType | null
@@ -64,6 +74,7 @@ interface SupplierPriceChange {
     effective_until: string | null
     reason: string | null
     submitted_at: string | null
+    last_cost_change: LastCostChange | null
     url: string
     master_costs_at_new_price: Record<number, number>
     open_purchase_order_lines: OpenPurchaseOrderLine[]
@@ -414,6 +425,41 @@ function isAnswering(request: PriceRequest, answerValue: Answer): boolean {
     return answering.value?.id === request.id && answering.value.answer === answerValue
 }
 
+function daysAgo(dateIso: string): string {
+    const days = Math.max(0, Math.floor((Date.now() - new Date(dateIso).getTime()) / 86400000))
+
+    return days === 1 ? ctrans("1 day") : ctrans(":days days", { days })
+}
+
+function lastCostChangeText(change: LastCostChange | null, fallbackCurrency: string | null): string {
+    const currency = change?.currency ?? fallbackCurrency
+    const fromTo = change?.old_cost !== null && change?.old_cost !== undefined && change?.new_cost !== null && change?.new_cost !== undefined
+        ? `: ${unitCost(currency, change.old_cost)} → ${unitCost(currency, change.new_cost)}`
+        : ""
+
+    if (change?.changed_at) {
+        return ctrans("Last price change :date, :ago ago", { date: useFormatTime(change.changed_at), ago: daysAgo(change.changed_at) }) + fromTo
+    }
+
+    if (change?.changed_after) {
+        return ctrans("Last price change some time after :date, :ago ago", { date: useFormatTime(change.changed_after), ago: daysAgo(change.changed_after) }) + fromTo
+    }
+
+    if (change?.since) {
+        return ctrans("Last price change N/A, same price for :ago, since :date", { date: useFormatTime(change.since), ago: daysAgo(change.since) })
+    }
+
+    return ctrans("Last price change N/A")
+}
+
+function lastCostChangePercent(change: LastCostChange | null): number | null {
+    if (!change?.old_cost || change.new_cost === null) {
+        return null
+    }
+
+    return Math.round((change.new_cost / change.old_cost - 1) * 1000) / 10
+}
+
 function supplierChangePercent(change: SupplierPriceChange): number | null {
     if (!change.cost) {
         return null
@@ -731,6 +777,12 @@ function saveMaster(masterProduct: MasterProduct): Promise<boolean> {
                             {{ ctrans(":new per carton of :units", { new: unitCost(request.currency, request.asked_unit_cost * request.units_per_carton), units: request.units_per_carton }) }}
                         </span>
                     </div>
+                    <p class="flex flex-wrap items-baseline gap-x-2 text-xs tabular-nums text-gray-500">
+                        <span>{{ lastCostChangeText(request.last_cost_change, request.currency) }}</span>
+                        <span v-if="lastCostChangePercent(request.last_cost_change) !== null" class="font-semibold" :class="(lastCostChangePercent(request.last_cost_change) as number) > 0 ? 'text-red-600' : 'text-green-700'">
+                            {{ (lastCostChangePercent(request.last_cost_change) as number) > 0 ? "+" : "" }}{{ lastCostChangePercent(request.last_cost_change) }}%
+                        </span>
+                    </p>
                     <p v-if="request.note" class="text-xs italic text-gray-600">{{ request.note }}</p>
 
                     <template v-if="request.answer_route">
@@ -836,6 +888,12 @@ function saveMaster(masterProduct: MasterProduct): Promise<boolean> {
                             {{ ctrans(":new per carton of :units", { new: unitCost(change.currency, change.proposed_cost * change.units_per_carton), units: change.units_per_carton }) }}
                         </span>
                     </div>
+                    <p class="flex flex-wrap items-baseline gap-x-2 text-xs tabular-nums text-gray-500">
+                        <span>{{ lastCostChangeText(change.last_cost_change, change.currency) }}</span>
+                        <span v-if="lastCostChangePercent(change.last_cost_change) !== null" class="font-semibold" :class="(lastCostChangePercent(change.last_cost_change) as number) > 0 ? 'text-red-600' : 'text-green-700'">
+                            {{ (lastCostChangePercent(change.last_cost_change) as number) > 0 ? "+" : "" }}{{ lastCostChangePercent(change.last_cost_change) }}%
+                        </span>
+                    </p>
                     <p v-if="change.proposed_moq" class="text-xs text-amber-900">
                         {{ change.minimum_carton_order && change.minimum_carton_order !== change.proposed_moq ? ctrans("Current MOQ :old cartons, the supplier proposes :new", { new: change.proposed_moq, old: change.minimum_carton_order }) : ctrans("MOQ :new cartons", { new: change.proposed_moq }) }}
                     </p>

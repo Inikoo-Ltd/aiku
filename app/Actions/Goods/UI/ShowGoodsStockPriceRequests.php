@@ -21,6 +21,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\Goods\Stock;
+use App\Models\Helpers\Audit;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -188,12 +189,15 @@ class ShowGoodsStockPriceRequests extends OrgAction
     {
         $canUpdateSupplierCost = $user->authTo('supply-chain.edit');
 
-        return self::pendingQuery()
+        $transactions    = self::pendingQuery()
             ->whereHas('orgStock', fn (Builder $query) => $query->where('stock_id', $stock->id))
-            ->with(['purchaseOrder.organisation', 'purchaseOrder.agent', 'purchaseOrder.currency', 'purchaseOrder.parent', 'supplierProduct.supplier', 'priceQueriedBy', 'currency', 'orgStock'])
+            ->with(['purchaseOrder.organisation', 'purchaseOrder.agent', 'purchaseOrder.currency', 'purchaseOrder.parent', 'supplierProduct.supplier', 'supplierProduct.currency', 'priceQueriedBy', 'currency', 'orgStock'])
             ->orderBy('price_queried_at')
-            ->get()
-            ->map(function (PurchaseOrderTransaction $transaction) use ($user, $canUpdateSupplierCost, $stock, $masterAssets) {
+            ->get();
+        $lastCostChanges = $this->lastCostChanges($transactions->pluck('supplierProduct')->filter());
+
+        return $transactions
+            ->map(function (PurchaseOrderTransaction $transaction) use ($user, $canUpdateSupplierCost, $stock, $masterAssets, $lastCostChanges) {
                 $purchaseOrder = $transaction->purchaseOrder;
                 $previousCost  = (float) ($transaction->price_query_previous_unit_cost ?? $transaction->unit_cost);
                 $canAnswer     = $user->authTo("procurement.$transaction->organisation_id.edit");
@@ -218,6 +222,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'note'                     => $transaction->price_query_note,
                     'asked_by'                 => $transaction->priceQueriedBy?->contact_name ?: $transaction->priceQueriedBy?->username,
                     'asked_at'                 => $transaction->price_queried_at,
+                    'last_cost_change'         => $lastCostChanges[$transaction->supplier_product_id] ?? null,
                     'master_costs_at_new_price' => $previousCost > 0 ? $this->costsAtPriceRatio($masterAssets, $stock, (float) $transaction->price_query_unit_cost / $previousCost) : [],
                     'can_update_supplier_cost' => $canAnswer && $canUpdateSupplierCost && $transaction->supplierProduct !== null,
                     'answer_route'             => $canAnswer ? [
@@ -243,15 +248,18 @@ class ShowGoodsStockPriceRequests extends OrgAction
      */
     private function supplierPriceChanges(Stock $stock, User $user, Collection $masterAssets): array
     {
-        return SupplierSubmission::query()
+        $supplierSubmissions = SupplierSubmission::query()
             ->where('group_id', $this->group->id)
             ->where('type', SupplierSubmissionTypeEnum::PRICE_CHANGE)
             ->whereIn('state', [SupplierSubmissionStateEnum::RECEIVED, SupplierSubmissionStateEnum::UNDER_REVIEW])
             ->whereIn('supplier_product_id', DB::table('stock_has_supplier_products')->where('stock_id', $stock->id)->select('supplier_product_id'))
             ->with(['supplier', 'supplierProduct.currency'])
             ->orderBy('submitted_at')
-            ->get()
-            ->map(function (SupplierSubmission $supplierSubmission) use ($user, $stock, $masterAssets) {
+            ->get();
+        $lastCostChanges     = $this->lastCostChanges($supplierSubmissions->pluck('supplierProduct')->filter());
+
+        return $supplierSubmissions
+            ->map(function (SupplierSubmission $supplierSubmission) use ($user, $stock, $masterAssets, $lastCostChanges) {
                 $supplierProduct = $supplierSubmission->supplierProduct;
                 $data            = $supplierSubmission->data ?? [];
                 $canDecide       = $supplierProduct !== null && DecideSupplierSubmission::canDecide($user, $supplierSubmission);
@@ -272,6 +280,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'effective_until'      => $data['effective_until'] ?? null,
                     'reason'               => $data['reason'] ?? null,
                     'submitted_at'         => $supplierSubmission->submitted_at,
+                    'last_cost_change'     => $lastCostChanges[$supplierSubmission->supplier_product_id] ?? null,
                     'url'                  => route('grp.supply-chain.supplier_submissions.show', [$supplierSubmission->id]),
                     'master_costs_at_new_price' => $supplierProduct && (float) $supplierProduct->cost > 0 ? $this->costsAtPriceRatio($masterAssets, $stock, (float) ($data['proposed_price'] ?? 0) / (float) $supplierProduct->cost) : [],
                     'open_purchase_order_lines' => $canDecide ? $this->openPurchaseOrderLines($supplierProduct, $user, (float) ($data['proposed_price'] ?? 0)) : [],
@@ -284,6 +293,78 @@ class ShowGoodsStockPriceRequests extends OrgAction
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * When each supplier product's cost last changed, from its audit trail. The cost brought over from Aurora (and the
+     * cost a product was created with) is a known starting point, not a change. Until 13 Nov 2026 the Aurora sync
+     * changed costs without an audit, so a cost that no longer matches the last known one is shown as changed some
+     * time after that point. A change made together with the currency has no meaningful percentage.
+     *
+     * @param  Collection<int, SupplierProduct>  $supplierProducts
+     * @return array<int, array{changed_at: ?string, changed_after: ?string, old_cost: ?float, new_cost: ?float, currency: ?string, since: ?string}>
+     */
+    private function lastCostChanges(Collection $supplierProducts): array
+    {
+        $supplierProducts = $supplierProducts->unique('id')->keyBy('id');
+        if ($supplierProducts->isEmpty()) {
+            return [];
+        }
+
+        $costAudits = Audit::query()
+            ->where('auditable_type', (new SupplierProduct())->getMorphClass())
+            ->whereIn('auditable_id', $supplierProducts->keys())
+            ->whereIn('event', ['created', 'migration', 'updated'])
+            ->whereRaw("new_values->>'cost' is not null")
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get(['id', 'auditable_id', 'event', 'created_at', 'old_values', 'new_values'])
+            ->groupBy('auditable_id');
+
+        return $supplierProducts->map(function (SupplierProduct $supplierProduct) use ($costAudits) {
+            $audits       = $costAudits->get($supplierProduct->id, collect());
+            $lastKnown    = $audits->first();
+            $lastChange   = $audits->first(fn (Audit $audit) => $audit->event === 'updated'
+                && isset($audit->old_values['cost'])
+                && (float) $audit->old_values['cost'] !== (float) $audit->new_values['cost']);
+            $currentCost  = (float) $supplierProduct->cost;
+            $currency     = $supplierProduct->currency?->code;
+
+            if ($lastKnown && (float) $lastKnown->new_values['cost'] !== $currentCost) {
+                return [
+                    'changed_at'    => null,
+                    'changed_after' => $lastKnown->created_at?->toIso8601String(),
+                    'old_cost'      => (float) $lastKnown->new_values['cost'],
+                    'new_cost'      => $currentCost,
+                    'currency'      => $currency,
+                    'since'         => null,
+                ];
+            }
+
+            if ($lastChange) {
+                $changedCurrency = array_key_exists('currency_id', $lastChange->new_values ?? []);
+
+                return [
+                    'changed_at'    => $lastChange->created_at?->toIso8601String(),
+                    'changed_after' => null,
+                    'old_cost'      => $changedCurrency ? null : (float) $lastChange->old_values['cost'],
+                    'new_cost'      => $changedCurrency ? null : (float) $lastChange->new_values['cost'],
+                    'currency'      => $currency,
+                    'since'         => null,
+                ];
+            }
+
+            $firstKnown = $audits->last();
+
+            return [
+                'changed_at'    => null,
+                'changed_after' => null,
+                'old_cost'      => null,
+                'new_cost'      => null,
+                'currency'      => $currency,
+                'since'         => ($firstKnown?->event === 'migration' ? $firstKnown->created_at : $supplierProduct->created_at)?->toIso8601String(),
+            ];
+        })->all();
     }
 
     /**
