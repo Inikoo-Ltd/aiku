@@ -74,8 +74,8 @@ class UpdateSlackChannelFromEvent
     }
 
     /**
-     * Not called: whether the aiku app joins new public channels by itself is still to be decided, and Slack shows a
-     * "joined" notice in the channel.
+     * Called only for a channel created from aiku (StoreSlackPublicChannel, INI-467). Whether the aiku app joins public
+     * channels made in Slack by itself is still to be decided, and Slack shows a "joined" notice in the channel.
      */
     public function joinNewPublicChannel(SlackChannel $channel): void
     {

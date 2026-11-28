@@ -316,6 +316,7 @@ class ShowStaffSlackChannels extends OrgAction
                 'slack_channel'      => fn () => $slackChannel ? [
                     'id'           => $slackChannel->id,
                     'name'         => $channelName,
+                    'slack_name'   => $slackChannel->getRawOriginal('name'),
                     'is_direct'    => (bool) $slackChannel->direct_type,
                     'topic'        => ($slackChannel->data['topic']['value'] ?? null) ?: null,
                     'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
@@ -325,6 +326,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'is_listed'    => $slackChannel->is_private && !$slackChannel->direct_type ? $slackChannel->is_listed : null,
                     'brought_by'   => $slackChannel->is_private && $slackChannel->brought_by_user_id ? User::whereKey($slackChannel->brought_by_user_id)->first()?->chatName() : null,
                     'member_count' => $slackChannel->members()->count(),
+                    'is_mine'      => $slackChannel->is_public && !$slackChannel->direct_type ? $slackChannel->members()->whereIn('slack_user_id', SlackChannel::linkedSlackIds($request->user()))->exists() : null,
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
                     'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),

@@ -86,6 +86,9 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/slack/{slackChannel}/messages/own-text', \App\Actions\Chat\Staff\Slack\Write\GetOwnSlackMessageText::class)->middleware('throttle:60,1,slack-edit-text')->name('slack.messages.own-text');
     Route::patch('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\EditSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.update');
     Route::delete('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\DeleteSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.delete');
+    Route::get('/slack-channels', \App\Actions\Chat\Staff\Json\GetSlackPublicChannelDirectory::class)->name('slack.directory');
+    Route::post('/slack-channels', \App\Actions\Chat\Staff\Slack\Write\StoreSlackPublicChannel::class)->middleware('throttle:10,1,slack-channel-create')->name('slack.channels.store');
+    Route::patch('/slack/{slackChannel}/channel', \App\Actions\Chat\Staff\Slack\Write\UpdateSlackPublicChannel::class)->middleware('throttle:20,1,slack-channel-update')->name('slack.channels.update');
 });
 
 Route::name('staff.')->middleware('throttle:120,1,slack-search')->group(function () {

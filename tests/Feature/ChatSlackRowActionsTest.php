@@ -393,3 +393,138 @@ test('a connection without the pins scope is asked to reconnect and Slack is nev
     Http::assertNothingSent();
     expect($message->refresh()->pinned_at)->toBeNull();
 });
+
+test('a public V·Desk created from aiku is a public Slack channel, kept at once with its description, the bot joins it and the echo events change nothing, INI-467', function () {
+    config(['services.slack.notifications.bot_user_oauth_token' => 'xoxb-test']);
+    $slackId = "CNEW{$this->s}";
+    $name    = 'buying-'.Str::lower($this->s);
+    Http::fake([
+        'slack.com/api/conversations.create'     => Http::response(['ok' => true, 'channel' => ['id' => $slackId, 'name' => $name, 'is_channel' => true, 'is_private' => false]]),
+        'slack.com/api/conversations.join'       => Http::response(['ok' => true, 'channel' => ['id' => $slackId]]),
+        'slack.com/api/conversations.setPurpose' => Http::response(['ok' => true, 'channel' => ['id' => $slackId, 'name' => $name, 'purpose' => ['value' => 'Orders to suppliers']]]),
+    ]);
+
+    actingAs($this->me)->postJson(route('grp.chat.staff.slack.channels.store'), ['name' => $name, 'description' => 'Orders to suppliers', 'is_private' => true])->assertOk()->assertJsonPath('url', fn (string $url) => str_contains($url, '/slack/'));
+
+    $channel = SlackChannel::where('slack_id', $slackId)->firstOrFail();
+    expect($channel->is_public)->toBeTrue()
+        ->and($channel->is_private)->toBeFalse()
+        ->and($channel->is_member)->toBeTrue()
+        ->and($channel->history_synced_at)->not->toBeNull()
+        ->and($channel->data['purpose']['value'])->toBe('Orders to suppliers')
+        ->and($channel->members()->pluck('slack_user_id')->all())->toBe([$this->mySlackId]);
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'conversations.create') && $request['is_private'] === 'false' && $request['name'] === $name && $request->hasHeader('Authorization', 'Bearer xoxp-test'));
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'conversations.join') && $request->hasHeader('Authorization', 'Bearer xoxb-test'));
+
+    \App\Actions\Chat\Staff\Slack\UpdateSlackChannelFromEvent::make()->handle(['type' => 'channel_created', 'channel' => ['id' => $slackId, 'name' => $name]], null);
+    \App\Actions\Chat\Staff\Slack\UpdateSlackChannelMember::make()->handle(['type' => 'member_joined_channel', 'user' => $this->mySlackId, 'channel' => $slackId]);
+    expect(SlackChannel::where('slack_id', $slackId)->count())->toBe(1)
+        ->and($channel->members()->count())->toBe(1)
+        ->and($channel->refresh()->data['purpose']['value'])->toBe('Orders to suppliers');
+});
+
+test('a channel name Slack would refuse is told before Slack, name_taken and a restricted workspace are told in plain words, INI-467', function () {
+    Http::fake(['slack.com/api/conversations.create' => Http::sequence()->push(['ok' => false, 'error' => 'name_taken'])->push(['ok' => false, 'error' => 'restricted_action'])]);
+    $store = fn (string $name) => actingAs($this->me)->postJson(route('grp.chat.staff.slack.channels.store'), ['name' => $name]);
+
+    $store('Buying Team')->assertUnprocessable()->assertJsonPath('errors.name.0', 'Use only lower case letters, numbers, hyphens and underscores, no spaces');
+    $store(str_repeat('a', 81))->assertUnprocessable()->assertJsonValidationErrors('name');
+    Http::assertNothingSent();
+
+    $store('general')->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Slack already has a channel with this name. Choose another');
+    $store('buying')->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Your Slack workspace does not let you do this');
+    expect(SlackChannel::whereIn('name', ['general', 'buying'])->where('group_id', $this->group->id)->where('created_at', '>', now()->subMinute())->exists())->toBeFalse();
+});
+
+test('joining, leaving, adding people, renaming, topic, description and archiving from aiku each reach Slack and are kept at once, INI-467', function () {
+    $other   = "UOTHER{$this->s}";
+    $renamed = 'renamed-'.Str::lower($this->s);
+    Http::fake([
+        'slack.com/api/conversations.join'       => Http::response(['ok' => true]),
+        'slack.com/api/conversations.leave'      => Http::sequence()->push(['ok' => true])->push(['ok' => false, 'error' => 'not_in_channel']),
+        'slack.com/api/conversations.invite'     => Http::response(['ok' => true]),
+        'slack.com/api/conversations.rename'     => Http::response(['ok' => true, 'channel' => ['id' => $this->channel->slack_id, 'name' => $renamed]]),
+        'slack.com/api/conversations.setTopic'   => Http::response(['ok' => true]),
+        'slack.com/api/conversations.setPurpose' => Http::response(['ok' => true, 'channel' => ['id' => $this->channel->slack_id, 'name' => $renamed, 'topic' => ['value' => 'Rota this week'], 'purpose' => ['value' => 'Warehouse rota']]]),
+        'slack.com/api/conversations.archive'    => Http::response(['ok' => true]),
+    ]);
+    $update  = fn (array $body) => actingAs($this->me)->patchJson(($this->url)('grp.chat.staff.slack.channels.update'), $body);
+    $members = fn () => $this->channel->members()->orderBy('slack_user_id')->pluck('slack_user_id')->all();
+
+    $update(['operation' => 'join'])->assertOk()->assertJsonPath('member_count', 1);
+    expect($members())->toBe([$this->mySlackId]);
+    $update(['operation' => 'leave'])->assertOk();
+    $update(['operation' => 'leave'])->assertOk();
+    expect($members())->toBe([]);
+
+    $update(['operation' => 'invite', 'slack_user_ids' => ['UNOBODY']])->assertUnprocessable()->assertJsonValidationErrors('slack');
+    $update(['operation' => 'invite', 'slack_user_ids' => [$other]])->assertOk();
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'conversations.invite') && $request['users'] === $other);
+    expect($members())->toBe([$other]);
+
+    $update(['operation' => 'rename', 'name' => 'Not Valid'])->assertUnprocessable()->assertJsonValidationErrors('name');
+    $update(['operation' => 'rename', 'name' => $renamed])->assertOk();
+    $update(['operation' => 'topic', 'text' => 'Rota this week'])->assertOk();
+    $update(['operation' => 'purpose', 'text' => 'Warehouse rota'])->assertOk();
+    $this->channel->refresh();
+    expect($this->channel->getRawOriginal('name'))->toBe($renamed)
+        ->and($this->channel->data['topic']['value'])->toBe('Rota this week')
+        ->and($this->channel->data['purpose']['value'])->toBe('Warehouse rota');
+
+    $update(['operation' => 'archive'])->assertOk();
+    expect($this->channel->refresh()->is_archived)->toBeTrue();
+    $update(['operation' => 'topic', 'text' => 'After'])->assertForbidden();
+    Http::assertSentCount(8);
+});
+
+test('Slack refusing a channel change is told in plain words, and private channels, DMs and the stand-in bot never reach these actions, INI-467', function () {
+    Http::fake(['slack.com/api/conversations.archive' => Http::sequence()->push(['ok' => false, 'error' => 'restricted_action'])->push(['ok' => false, 'error' => 'not_authorized'])]);
+    $update = fn (array $body, ?SlackChannel $channel = null) => actingAs($this->me)->patchJson(($this->url)('grp.chat.staff.slack.channels.update', $channel), $body);
+
+    $update(['operation' => 'archive'])->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Your Slack workspace does not let you do this');
+    $update(['operation' => 'archive'])->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Only the person who created this channel or a Slack admin can do this');
+    expect($this->channel->refresh()->is_archived)->toBeFalse();
+
+    $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GPRIV{$this->s}", 'name' => "priv-{$this->s}", 'is_public' => false, 'is_private' => true]);
+    $private->members()->create(['slack_user_id' => $this->mySlackId]);
+    $direct = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "DDIR{$this->s}", 'name' => "dm-{$this->s}", 'is_public' => false, 'is_private' => true, 'direct_type' => 'im']);
+    $direct->members()->create(['slack_user_id' => $this->mySlackId]);
+    $update(['operation' => 'join'], $private)->assertForbidden();
+    $update(['operation' => 'archive'], $direct)->assertForbidden();
+    $update(['operation' => 'join'], $this->ignored)->assertForbidden();
+
+    $ids = collect(actingAs($this->me)->getJson(route('grp.chat.staff.slack.directory'))->assertOk()->json('data'))->pluck('id');
+    expect($ids)->toContain($this->channel->id)->not->toContain($private->id)->not->toContain($direct->id)->not->toContain($this->ignored->id);
+
+    SlackConnection::where('user_id', $this->me->id)->delete();
+    $update(['operation' => 'join'])->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Connect your Slack account to write here');
+    Http::assertSentCount(2);
+});
+
+test('a channel is still created when the bot cannot join or Slack refuses its description, adding people skips members and records only who Slack added, INI-467', function () {
+    config(['services.slack.notifications.bot_user_oauth_token' => 'xoxb-test']);
+    $slackId = "CWARN{$this->s}";
+    $name    = 'almacén-'.Str::lower($this->s);
+    $third   = "UTHIRD{$this->s}";
+    SlackUser::create(['slack_id' => $third, 'real_name' => 'Third Person']);
+    Http::fake([
+        'slack.com/api/conversations.create'     => Http::response(['ok' => true, 'channel' => ['id' => $slackId, 'name' => $name]]),
+        'slack.com/api/conversations.join'       => fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'),
+        'slack.com/api/conversations.setPurpose' => Http::response(['ok' => false, 'error' => 'ratelimited']),
+        'slack.com/api/conversations.invite'     => Http::response(['ok' => true, 'errors' => [['user' => $third, 'ok' => false, 'error' => 'cant_invite']]]),
+    ]);
+
+    actingAs($this->me)->postJson(route('grp.chat.staff.slack.channels.store'), ['name' => $name, 'description' => 'Store'])
+        ->assertOk()->assertJsonPath('warning', 'The V·Desk was created, but Slack did not save its description. Add it from the channel menu');
+    $channel = SlackChannel::where('slack_id', $slackId)->firstOrFail();
+    expect($channel->is_member)->toBeFalse();
+
+    $channel->members()->create(['slack_user_id' => "UOTHER{$this->s}"]);
+    actingAs($this->me)->patchJson(($this->url)('grp.chat.staff.slack.channels.update', $channel), ['operation' => 'invite', 'slack_user_ids' => ["UOTHER{$this->s}", $third]])
+        ->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Slack could not add: Third Person');
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'conversations.invite') && $request['users'] === $third && $request['force'] === 'true');
+    expect($channel->members()->pluck('slack_user_id')->sort()->values()->all())->toBe(collect([$this->mySlackId, "UOTHER{$this->s}"])->sort()->values()->all());
+
+    actingAs($this->me)->patchJson(($this->url)('grp.chat.staff.slack.channels.update', $channel), ['operation' => 'invite', 'slack_user_ids' => ["UOTHER{$this->s}"]])->assertOk();
+    Http::assertSentCount(3);
+});

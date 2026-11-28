@@ -24,6 +24,7 @@ import FilesAndLinksPanel, { type SharedItem } from "@/Components/Messaging/File
 import SlackMessageComposer, { type SlackSentMessage, type SlackWriteState } from "@/Components/Messaging/Slack/SlackMessageComposer.vue"
 import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 import ChatWallpaperButton from "@/Components/Messaging/ChatWallpaperButton.vue"
+import SlackChannelMenu from "@/Components/Messaging/Slack/SlackChannelMenu.vue"
 import { hasWallpaper, useBubbles, wallpaperStyle, type ChatWallpaper } from "@/Components/Messaging/chatWallpaper"
 
 export type { SlackStreamMessage }
@@ -41,6 +42,7 @@ export interface SlackBookmark {
 export interface SlackChannelHeader {
     id: number
     name: string | null
+    slack_name?: string | null
     topic: string | null
     purpose?: string | null
     is_archived: boolean
@@ -50,6 +52,7 @@ export interface SlackChannelHeader {
     brought_by?: string | null
     is_listed?: boolean | null
     member_count?: number
+    is_mine?: boolean | null
     pinned_count?: number
     bookmarks?: SlackBookmark[]
     last_read_ts?: string | null
@@ -383,6 +386,7 @@ const updateListing = (isListed: boolean) => {
                         </div>
                     </div>
                     <ChatWallpaperButton :slack-channel-id="channel.id" :wallpaper="channel.wallpaper" :is-set="!!channel.wallpaper_is_set" @saved="onWallpaperSaved" />
+                    <SlackChannelMenu v-if="write?.allowed && !write.direct && !channel.is_private && !channel.is_archived" :channel="channel" :write="write" />
                     <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[var(--vx-head-muted,#616061)] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
                 <div v-if="bookmarks.length || (write?.allowed && !write.direct)" class="flex items-center gap-x-1.5 overflow-x-auto px-3 pb-2">

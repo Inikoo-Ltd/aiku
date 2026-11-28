@@ -11,7 +11,7 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks } from "@fal"
+import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faSearch, faTimes, faUser, faUsers, faTasks } from "@fal"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import { faChevronLeft } from "@far"
@@ -25,6 +25,7 @@ import { draftChannelIds } from "@/Components/Messaging/deskDrafts"
 import { listSwatch } from "@/Components/Messaging/chatWallpaper"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
 import NewVerbrationDialog from "@/Components/Messaging/NewVerbrationDialog.vue"
+import SlackChannelDirectoryDialog from "@/Components/Messaging/Slack/SlackChannelDirectoryDialog.vue"
 import VerbaHome from "@/Components/Messaging/VerbaHome.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SlackPrivateConsentDialog from "@/Components/Forms/Fields/SlackPrivateConsentDialog.vue"
@@ -35,7 +36,7 @@ import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } 
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
 import { isInSlackStream, reloadSlack, useSlackLive, useSlackLiveMany, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
-library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
+library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faSearch, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
 
 interface SlackChannelListItem {
     id: number
@@ -446,6 +447,7 @@ const tabConversations = computed(() => isChannelsTab.value
     ? (isGroups.value ? messagingConversations.value.filter((conversation) => isVerbration(conversation)) : [])
     : messagingConversations.value.filter((conversation) => !isVerbration(conversation)))
 const isNewVerbrationOpen = ref(false)
+const directoryMode = ref<"browse" | "create" | null>(null)
 const isPrivateConsentOpen = ref(false)
 const filterLabel = computed(() => (isChannelsTab.value ? ctrans("Filter V·Desks") : ctrans("Filter V·Ds")))
 
@@ -730,6 +732,16 @@ onUnmounted(() => {
                             :is-active="isSelectedChannel(channel.id)"
                             :is-starred="false"
                             @toggle-star="toggleStar('slack-' + channel.id)" />
+                        <template v-if="!filterText">
+                            <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]" @click="directoryMode = 'create'">
+                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--desk-chip)] text-sm">+</span>
+                                <span class="truncate">{{ ctrans("New public V·Desk") }}</span>
+                            </button>
+                            <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]" @click="directoryMode = 'browse'">
+                                <FontAwesomeIcon icon="fal fa-search" class="w-5 shrink-0 text-[13px]" fixed-width aria-hidden="true" />
+                                <span class="truncate">{{ ctrans("Browse V·Desks") }}</span>
+                            </button>
+                        </template>
                     </section>
     
                     <section v-if="isDesks && hasSlack && (filterText ? shownArchivedChannels.length : listedArchivedChannels.length)" class="mt-3">
@@ -937,6 +949,7 @@ onUnmounted(() => {
             :start-route="slack_private_opt_in.start_route"
             :unavailable-reason="slack_private_opt_in.unavailable_reason" />
         <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="(url) => router.visit(url)" />
+        <SlackChannelDirectoryDialog :visible="directoryMode !== null" :start-creating="directoryMode === 'create'" @update:visible="(open) => !open && (directoryMode = null)" @created="(url) => router.visit(url)" @joined="router.reload({ only: ['slack_channel'] })" />
         <StaffProfileCard />
 
         <Dialog v-model:visible="isShortcutsOpen" modal dismissable-mask :header="ctrans('Keyboard shortcuts')" :style="{ width: '28rem' }" :breakpoints="{ '640px': '92vw' }">
