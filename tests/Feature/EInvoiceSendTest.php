@@ -977,3 +977,41 @@ test('company numbers are labelled by the customer\'s country in Slovak and Span
         $this->customer->update(['peppol_id' => null, 'identity_document_number_alt' => null, 'company_name' => null]);
     }
 });
+
+test('a Belgian customer\'s enterprise number is checked, stored as 10 digits and taken from its Belgian VAT number when it gave none', function () {
+    $labels          = \App\Actions\CRM\Customer\CompanyIdLabels::class;
+    $originalCountry = $this->customer->address->country_code;
+
+    expect($labels::belgianEnterpriseNumber('BE0683671836'))->toBe('0683671836')
+        ->and($labels::belgianEnterpriseNumber('1039.543.060'))->toBe('1039543060')
+        ->and($labels::belgianEnterpriseNumber('683 671 836'))->toBe('0683671836')
+        ->and($labels::belgianEnterpriseNumber('0683671837'))->toBeNull()
+        ->and($labels::belgianEnterpriseNumber('11706332'))->toBeNull()
+        ->and($labels::belgianEnterpriseNumber('plus tard 2016'))->toBeNull()
+        ->and($labels::for($this->shop, 'BE')['id'])->toBe('Ondernemingsnummer / N° d\'entreprise');
+
+    try {
+        $this->customer->address->update(['country_code' => 'BE']);
+        $this->customer->taxNumber?->delete();
+
+        $customer = \App\Actions\CRM\Customer\UpdateCustomer::make()->action($this->customer->fresh(), ['identity_document_number' => 'BE 0683.671.836']);
+        expect($customer->fresh()->identity_document_number)->toBe('0683671836');
+
+        expect(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($this->customer->fresh(), ['identity_document_number' => '11706332']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        $customer->update(['identity_document_number' => null]);
+        \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $customer->fresh(), modelData: ['number' => 'BE1039543060', 'country_id' => \App\Models\Helpers\Country::where('code', 'BE')->value('id')], strict: false);
+        $labels::fillBelgianEnterpriseNumber($customer->fresh());
+        expect($customer->fresh()->identity_document_number)->toBe('1039543060');
+
+        $customer->address->update(['country_code' => 'NL']);
+        $customer->update(['identity_document_number' => '11706332']);
+        $labels::fillBelgianEnterpriseNumber($customer->fresh());
+        expect($customer->fresh()->identity_document_number)->toBe('11706332');
+    } finally {
+        $this->customer->fresh()->taxNumber?->delete();
+        $this->customer->address->update(['country_code' => $originalCountry]);
+        $this->customer->update(['identity_document_number' => null]);
+    }
+});

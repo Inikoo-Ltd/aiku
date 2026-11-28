@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Models\Helpers\Country;
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
 use Closure;
@@ -212,6 +213,8 @@ class StoreCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
+        CompanyIdLabels::fillBelgianEnterpriseNumber($customer);
+
         return $customer;
     }
 
@@ -300,7 +303,7 @@ class StoreCustomer extends OrgAction
                 'nullable',
                 'string:32'
             ],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'identity_document_number' => ['sometimes', 'nullable', 'string', CompanyIdLabels::belgianEnterpriseNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code)],
             'peppol_id'                => BuildUblInvoice::peppolIdRules(),
             'peppol_dic'               => [
                 'sometimes',

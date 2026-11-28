@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Models\Helpers\Country;
 use Closure;
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
@@ -323,6 +324,10 @@ class UpdateCustomer extends OrgAction
             VerifyCustomerDic::dispatchIfApplies($customer);
         }
 
+        if ($taxNumberChanged || Arr::has($changes, 'identity_document_number')) {
+            CompanyIdLabels::fillBelgianEnterpriseNumber($customer->refresh());
+        }
+
         if (Arr::has($changes, 'contact_name')) {
             $customer->webUsers()->where('is_root', true)->first()?->update(
                 ['contact_name' => $customer->contact_name]
@@ -436,7 +441,7 @@ class UpdateCustomer extends OrgAction
                 'nullable',
                 $this->strict ? new Phone() : 'string:255',
             ],
-            'identity_document_number'                              => ['sometimes', 'nullable', 'string'],
+            'identity_document_number'                              => ['sometimes', 'nullable', 'string', CompanyIdLabels::belgianEnterpriseNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code ?? $this->customer?->address?->country_code)],
             'identity_document_number_alt'                          => ['sometimes', 'nullable', 'string'],
             'contact_website'                                       => ['sometimes', 'nullable', 'active_url'],
             'contact_address'                                       => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],

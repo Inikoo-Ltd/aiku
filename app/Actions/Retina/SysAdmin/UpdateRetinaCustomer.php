@@ -9,6 +9,8 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
+use App\Models\Helpers\Country;
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use Closure;
 use Illuminate\Support\Arr;
@@ -168,7 +170,7 @@ class UpdateRetinaCustomer extends RetinaAction
             'delivery_address_id'          => ['sometimes', 'integer'],
             'tags'                         => ['sometimes', 'array'],
             'is_gift_opted_out'            => ['sometimes', 'boolean'],
-            'identity_document_number'     => ['sometimes', 'nullable', 'string'],
+            'identity_document_number'     => ['sometimes', 'nullable', 'string', CompanyIdLabels::belgianEnterpriseNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code ?? $this->customer?->address?->country_code)],
             'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],
             'buys_as_private_person'       => ['sometimes', 'boolean'],
             'peppol_dic'                   => [

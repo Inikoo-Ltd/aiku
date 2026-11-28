@@ -12,6 +12,7 @@ use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use Closure;
 
 /**
  * HELP-5000. The company numbers each country uses, labelled as the customer's country names them, so a Slovak customer
@@ -38,6 +39,7 @@ class CompanyIdLabels
         'NL' => ['KvK-nummer', null, 'btw-id'],
         'RO' => ['Nr. Reg. Com.', null, 'CUI / Cod TVA'],
         'ES' => ['NIF', null, 'NIF-IVA'],
+        'BE' => ['Ondernemingsnummer / N° d\'entreprise', null, 'BTW / TVA'],
     ];
 
     /**
@@ -124,6 +126,57 @@ class CompanyIdLabels
         }
 
         return $labels['alt'] ?? __('Other number');
+    }
+
+    /**
+     * INI-591. A Belgian enterprise number (KBO/BCE) as 10 digits, or null when it is not one: dots, spaces and a BE
+     * prefix are dropped, an old 9-digit number gets its leading 0, and the last two digits must be 97 minus the first
+     * eight mod 97. The VAT number is the same digits, so it gives the enterprise number too.
+     */
+    public static function belgianEnterpriseNumber(?string $value): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string)$value);
+        if (strlen($digits) === 9) {
+            $digits = '0'.$digits;
+        }
+        if (!preg_match('/^[01]\d{9}$/', $digits)) {
+            return null;
+        }
+
+        return 97 - (int)substr($digits, 0, 8) % 97 === (int)substr($digits, 8) ? $digits : null;
+    }
+
+    /**
+     * Validation for the registration number field: a Belgian business must give a valid enterprise number.
+     *
+     * @param  callable(): ?string  $countryCode
+     */
+    public static function belgianEnterpriseNumberRule(callable $countryCode): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($countryCode) {
+            if (is_string($value) && trim($value) !== '' && $countryCode() === 'BE' && self::belgianEnterpriseNumber($value) === null) {
+                $fail(__('This is not a valid Belgian enterprise number. It has 10 digits, the same as the VAT number without BE.'));
+            }
+        };
+    }
+
+    /**
+     * Stores a Belgian customer's enterprise number as 10 digits, taken from its Belgian VAT number when it gave none,
+     * so the Peppol address (0208) is there before e-invoicing Belgium starts.
+     */
+    public static function fillBelgianEnterpriseNumber(Customer $customer): void
+    {
+        if ($customer->address?->country_code !== 'BE') {
+            return;
+        }
+
+        $number = blank($customer->identity_document_number)
+            ? ($customer->taxNumber?->country?->code === 'BE' ? self::belgianEnterpriseNumber($customer->taxNumber->number) : null)
+            : self::belgianEnterpriseNumber($customer->identity_document_number);
+
+        if ($number !== null && $number !== $customer->identity_document_number) {
+            $customer->update(['identity_document_number' => $number]);
+        }
     }
 
     private static function isSlovakDic(string $value): bool
