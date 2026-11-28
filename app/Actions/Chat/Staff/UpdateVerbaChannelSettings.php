@@ -60,9 +60,10 @@ class UpdateVerbaChannelSettings
             if (array_filter($changes)) {
                 $slackChannel->auditEvent     = 'update';
                 $slackChannel->isCustomEvent  = true;
-                $slackChannel->auditCustomOld = ['shows_to' => $before ? implode(', ', $before) : __('Everyone')];
-                $slackChannel->auditCustomNew = ['shows_to' => implode(', ', $slackChannel->organisations()->orderBy('name')->pluck('name')->all()) ?: __('Everyone')];
+                $slackChannel->auditCustomOld = ['shows_to' => $before ? implode(', ', $before) : 'Everyone'];
+                $slackChannel->auditCustomNew = ['shows_to' => implode(', ', $slackChannel->organisations()->orderBy('name')->pluck('name')->all()) ?: 'Everyone'];
                 Event::dispatch(new AuditCustom($slackChannel));
+                $slackChannel->isCustomEvent  = false;
             }
         }
 
@@ -71,12 +72,14 @@ class UpdateVerbaChannelSettings
 
     public function asController(SlackChannel $slackChannel, ActionRequest $request): JsonResponse
     {
+        $before  = [$slackChannel->is_hidden_in_lists, $slackChannel->organisations()->orderBy('organisations.id')->pluck('organisations.id')->all()];
         $channel = $this->handle($slackChannel, $request->validated());
+        $after   = [$channel->is_hidden_in_lists, $channel->organisations()->orderBy('organisations.id')->pluck('organisations.id')->all()];
 
         return response()->json([
-            'is_hidden_in_lists' => $channel->is_hidden_in_lists,
-            'organisation_ids'   => $channel->organisations()->pluck('organisations.id')->all(),
-            'last_change'        => ['by' => $request->user()->contact_name ?? $request->user()->username, 'at' => now()->toIso8601String()],
+            'is_hidden_in_lists' => $after[0],
+            'organisation_ids'   => $after[1],
+            ...($before !== $after ? ['last_change' => ['by' => $request->user()->contact_name, 'at' => now()->toIso8601String()]] : []),
         ]);
     }
 }
