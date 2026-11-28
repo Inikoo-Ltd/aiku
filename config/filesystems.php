@@ -103,6 +103,7 @@ return [
             'endpoint'                => env('CLOUDFLARE_STAFF_CHAT_R2_ENDPOINT'),
             'bucket'                  => env('CLOUDFLARE_STAFF_CHAT_R2_BUCKET_NAME'),
             'use_path_style_endpoint' => true,
+            'stream_reads'            => true,
             'throw'                   => true,
         ],
         'catalogue-iris-r2' => [

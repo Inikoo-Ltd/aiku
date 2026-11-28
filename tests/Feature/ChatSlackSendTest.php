@@ -13,6 +13,7 @@ use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
 use App\Actions\Chat\Staff\Slack\CopySlackMessageFile;
 use App\Actions\Chat\Staff\Slack\Write\SendSlackMessage;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
+use App\Actions\Chat\Staff\Slack\Write\UploadSlackLargeFile;
 use App\Events\BroadcastPersonalNotification;
 use App\Events\SlackChannelMessageChanged;
 use App\Mcp\Servers\AikuServer;
@@ -647,6 +648,126 @@ describe('files sent from aiku, INI-465', function () {
         expect(CopySlackMessageFile::privateReadingToken($rows[0]))->toBe($this->token);
 
         ($this->upload)(UploadedFile::fake()->image('not-mine.png', 20, 20), $this->bob, $dm)->assertForbidden();
+    });
+
+    describe('files over 25 MB, straight to R2 then relayed to Slack by a job, INI-491', function () {
+        beforeEach(function () {
+            $this->r2Calls = [];
+            $this->r2Size  = 120 * 1024 * 1024;
+            Config::set('filesystems.disks.staff-chat-r2', [
+                'driver' => 's3', 'key' => 'key', 'secret' => 'secret', 'region' => 'auto', 'endpoint' => 'https://account.r2.cloudflarestorage.com',
+                'bucket' => 'aiku-staff-chat', 'use_path_style_endpoint' => true, 'throw' => true,
+                'handler' => function (\Aws\CommandInterface $command) {
+                    $this->r2Calls[] = $command->getName();
+
+                    return \GuzzleHttp\Promise\Create::promiseFor(new \Aws\Result(match ($command->getName()) {
+                        'CreateMultipartUpload' => ['UploadId' => 'UP1'],
+                        'HeadObject'            => ['ContentLength' => $this->r2Size],
+                        default                 => [],
+                    }));
+                },
+            ]);
+            Storage::forgetDisk('staff-chat-r2');
+            $this->startLarge = fn (array $file, ?User $as = null, ?SlackChannel $channel = null) => actingAs($as ?? $this->writer)
+                ->postJson(route('grp.chat.staff.slack.large-files.start', ['slackChannel' => ($channel ?? $this->general)->id]), $file);
+        });
+
+        test('aiku signs one short-lived R2 link per 50 MB part on a key it chooses, and refuses what it could never send before touching R2', function () {
+            $started = ($this->startLarge)(['name' => '../training.mp4', 'size' => $this->r2Size, 'mime_type' => 'video/mp4'])->assertOk();
+
+            expect($started->json('urls'))->toHaveCount(3)
+                ->and($started->json('urls.2'))->toContain('account.r2.cloudflarestorage.com/aiku-staff-chat/slack-uploads/'.$started->json('upload'))
+                ->toContain('partNumber=3')->toContain('uploadId=UP1')->toContain('X-Amz-Expires=7200')
+                ->and(Cache::get(UploadSlackLargeFile::stateKey($started->json('upload')))['name'])->toBe('training.mp4')
+                ->and($this->r2Calls)->toBe(['CreateMultipartUpload']);
+
+            ($this->startLarge)(['name' => 'huge.mp4', 'size' => 1024 ** 3 + 1, 'mime_type' => 'video/mp4'])->assertUnprocessable();
+            ($this->startLarge)(['name' => 'page.html', 'size' => $this->r2Size, 'mime_type' => 'text/html'])->assertUnprocessable();
+            ($this->startLarge)(['name' => 'archive.7z', 'size' => $this->r2Size, 'mime_type' => 'application/octet-stream'])->assertOk();
+            ($this->startLarge)(['name' => 'a.mp4', 'size' => $this->r2Size, 'mime_type' => 'video/mp4'], null, $this->private)->assertForbidden();
+            ($this->startLarge)(['name' => 'a.mp4', 'size' => $this->r2Size, 'mime_type' => 'video/mp4'], $this->bob)->assertUnprocessable();
+            Config::set('filesystems.disks.staff-chat-r2.bucket', null);
+            ($this->startLarge)(['name' => 'a.mp4', 'size' => $this->r2Size, 'mime_type' => 'video/mp4'])->assertUnprocessable();
+            expect($this->r2Calls)->toBe(['CreateMultipartUpload', 'CreateMultipartUpload']);
+        });
+
+        test('completing checks the real size in R2: a short file is deleted and refused, a whole one is queued for Slack; only its uploader in that channel sees its state', function () {
+            \Illuminate\Support\Facades\Queue::fake();
+            $upload   = ($this->startLarge)(['name' => 'training.mp4', 'size' => $this->r2Size, 'mime_type' => 'video/mp4'])->json('upload');
+            $parts    = [['part' => 1, 'etag' => '"a"'], ['part' => 2, 'etag' => '"b"'], ['part' => 3, 'etag' => '"c"']];
+            $complete = fn (array $parts, ?User $as = null) => actingAs($as ?? $this->writer)
+                ->postJson(route('grp.chat.staff.slack.large-files.complete', ['slackChannel' => $this->general->id, 'upload' => $upload]), ['parts' => $parts]);
+
+            $complete(array_slice($parts, 0, 2))->assertUnprocessable();
+            $complete($parts, $this->reader)->assertNotFound();
+
+            $this->r2Size = 1024;
+            $complete($parts)->assertUnprocessable();
+            expect($this->r2Calls)->toContain('AbortMultipartUpload')->toContain('DeleteObject');
+            UploadSlackLargeFile::assertNotPushed();
+
+            $upload       = ($this->startLarge)(['name' => 'training.mp4', 'size' => 120 * 1024 * 1024, 'mime_type' => 'video/mp4'])->json('upload');
+            $this->r2Size = 120 * 1024 * 1024;
+            actingAs($this->writer)->postJson(route('grp.chat.staff.slack.large-files.complete', ['slackChannel' => $this->general->id, 'upload' => $upload]), ['parts' => $parts])
+                ->assertOk()->assertJsonPath('state', 'relaying');
+            UploadSlackLargeFile::assertPushed(1);
+            actingAs($this->writer)->getJson(route('grp.chat.staff.slack.large-files.show', ['slackChannel' => $this->private->id, 'upload' => $upload]))->assertNotFound();
+            actingAs($this->writer)->getJson(route('grp.chat.staff.slack.large-files.show', ['slackChannel' => $this->general->id, 'upload' => $upload]))->assertJsonPath('state', 'relaying');
+        });
+
+        test('the job checks the real type from R2, relays the bytes to Slack as the person, keeps the R2 object as our copy and leaves the file ready for SendSlackFiles; a disguised page is deleted unsent', function () {
+            Storage::fake('staff-chat-r2');
+            $relay = function (string $name, string $bytes) {
+                $upload = strtolower((string) Str::ulid());
+                Storage::disk('staff-chat-r2')->put("slack-uploads/$upload", $bytes);
+                Cache::put(UploadSlackLargeFile::stateKey($upload), [
+                    'user_id' => $this->writer->id, 'channel_id' => $this->general->id, 'upload_id' => 'UP1', 'path' => "slack-uploads/$upload",
+                    'name' => $name, 'size' => strlen($bytes), 'parts' => 1, 'state' => 'relaying', 'file_id' => null, 'error' => null,
+                ]);
+                setPermissionsTeamId(null);
+                app()->forgetInstance('group');
+                UploadSlackLargeFile::make()->asJob($upload);
+
+                return [$upload, Cache::get(UploadSlackLargeFile::stateKey($upload))];
+            };
+
+            [$page, $refused] = $relay('photo.png', '<html><body><script>alert(1)</script></body></html>');
+            expect($refused['state'])->toBe('failed')->and($refused['error'])->not->toBeNull()
+                ->and(Storage::disk('staff-chat-r2')->exists("slack-uploads/$page"))->toBeFalse()
+                ->and($this->fileCalls)->toBe([]);
+
+            [$upload, $done] = $relay('notes.pdf', "%PDF-1.4\n".str_repeat('a', 2048));
+            expect($done['state'])->toBe('done')->and($this->fileCalls)->toBe(['getUploadURLExternal', 'bytes']);
+            $bytes = Http::recorded(fn (Request $request) => str_contains($request->url(), 'files.slack.com/upload'))->last()[0];
+            expect($bytes->header('Content-Length')[0])->toBe('2057')->and($bytes->header('Content-Type')[0])->toBe('application/pdf');
+            $copy = SlackFile::where('slack_id', $done['file_id'])->where('is_private', false)->first();
+            expect($copy->state->value)->toBe('copied')->and($copy->media_id)->not->toBeNull()->and($copy->disk)->toBeNull()
+                ->and(Storage::disk('staff-chat-r2')->exists("slack-uploads/$upload"))->toBeFalse();
+
+            setPermissionsTeamId($this->group->id);
+            app()->instance('group', $this->group);
+            ($this->completeFiles)([$done['file_id']])->assertOk();
+            expect($this->fileCalls)->toBe(['getUploadURLExternal', 'bytes', 'completeUploadExternal']);
+
+            Config::set('media-library.max_file_size', 1024);
+            [$video, $kept] = $relay('notes-long.pdf', "%PDF-1.4\n".str_repeat('b', 4096));
+            $copy = SlackFile::where('slack_id', $kept['file_id'])->where('is_private', false)->first();
+            expect($kept['state'])->toBe('done')->and($copy->media_id)->toBeNull()->and($copy->disk)->toBe('staff-chat-r2')->and($copy->path)->toBe("slack-files/{$kept['file_id']}/notes-long.pdf")
+                ->and(Storage::disk('staff-chat-r2')->exists($copy->path))->toBeTrue()
+                ->and(Storage::disk('staff-chat-r2')->exists("slack-uploads/$video"))->toBeFalse();
+        });
+
+        test('a job killed mid-relay leaves no file stuck on Sending to Slack and deletes the object', function () {
+            Storage::fake('staff-chat-r2');
+            $upload = strtolower((string) Str::ulid());
+            Storage::disk('staff-chat-r2')->put("slack-uploads/$upload", 'bytes');
+            Cache::put(UploadSlackLargeFile::stateKey($upload), ['user_id' => $this->writer->id, 'channel_id' => $this->general->id, 'upload_id' => 'UP1', 'path' => "slack-uploads/$upload", 'name' => 'a.mp4', 'size' => 5, 'parts' => 1, 'state' => 'relaying', 'file_id' => null, 'error' => null]);
+
+            UploadSlackLargeFile::make()->jobFailed(new RuntimeException('timeout'), $upload);
+
+            expect(Cache::get(UploadSlackLargeFile::stateKey($upload))['state'])->toBe('failed')
+                ->and(Storage::disk('staff-chat-r2')->exists("slack-uploads/$upload"))->toBeFalse();
+        });
     });
 });
 

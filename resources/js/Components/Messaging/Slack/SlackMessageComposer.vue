@@ -31,6 +31,7 @@ export interface SlackWriteState {
     channels?: DeskPerson[]
     member_count?: number
     max_file_bytes?: number
+    max_large_file_bytes?: number | null
 }
 
 export interface SlackSentMessage {
@@ -86,6 +87,9 @@ const isUploading = computed(() => attached.value.some((item) => item.status ===
 const hasFailed = computed(() => attached.value.some((item) => item.status === "failed"))
 const readyFileIds = computed(() => attached.value.filter((item) => item.status === "done").map((item) => item.fileId as string))
 const maxBytes = computed(() => props.write.max_file_bytes ?? 95 * 1024 * 1024)
+const largestBytes = computed(() => Math.max(maxBytes.value, props.write.max_large_file_bytes ?? 0))
+const LARGE_STATUS_POLL_MS = 2000
+const LARGE_RELAY_MAX_MS = 35 * 60 * 1000
 
 const uploadErrorOf = (e: any): string =>
     e?.response?.status === 413
@@ -94,10 +98,71 @@ const uploadErrorOf = (e: any): string =>
             ? ctrans("You are sending too fast. Try again in a moment.")
             : e?.response?.data?.errors?.slack?.[0] ?? e?.response?.data?.errors?.file?.[0] ?? e?.response?.data?.message ?? ctrans("The file was not uploaded. Try again.")
 
+const putPart = (url: string, blob: Blob, onProgress: (loaded: number) => void) => new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", url)
+    xhr.upload.onprogress = (event) => onProgress(event.loaded)
+    xhr.onload = () => {
+        const etag = xhr.getResponseHeader("ETag")
+        if (xhr.status < 300 && etag) resolve(etag)
+        else reject(new Error("part refused"))
+    }
+    xhr.onerror = () => reject(new Error("part not sent"))
+    xhr.send(blob)
+})
+
+const isAttached = (item: AttachedFile) => attached.value.some((candidate) => candidate.key === item.key)
+
+const uploadLarge = async (item: AttachedFile) => {
+    const slackChannel = props.channelId
+    const { data: started } = await axios.post(route("grp.chat.staff.slack.large-files.start", { slackChannel }), {
+        name: item.file.name,
+        size: item.file.size,
+        mime_type: item.file.type || "application/octet-stream",
+    })
+    const sent: number[] = []
+    const parts: { part: number; etag: string }[] = []
+    // shortcut: parts go one after another; send two or three at once if staff find 1 GB too slow
+    for (const [index, url] of (started.urls as string[]).entries()) {
+        if (!isAttached(item) || props.channelId !== slackChannel) return null
+        const blob = item.file.slice(index * started.part_bytes, (index + 1) * started.part_bytes)
+        const etag = await putPart(url, blob, (loaded) => {
+            sent[index] = loaded
+            item.progress = Math.min(0.99, sent.reduce((total, value) => total + (value ?? 0), 0) / item.file.size)
+        }).catch(() => {
+            throw new Error(ctrans("The file did not reach storage. Check your connection and try again."))
+        })
+        parts.push({ part: index + 1, etag })
+    }
+    if (!isAttached(item) || props.channelId !== slackChannel) return null
+    let { data: state } = await axios.post(route("grp.chat.staff.slack.large-files.complete", { slackChannel, upload: started.upload }), { parts })
+    item.progress = 1
+    const giveUpAt = Date.now() + LARGE_RELAY_MAX_MS
+    while (state.state === "relaying" && isAttached(item) && props.channelId === slackChannel) {
+        if (Date.now() > giveUpAt) throw new Error(ctrans("Slack is taking too long with this file. Try again."))
+        await new Promise((resolve) => setTimeout(resolve, LARGE_STATUS_POLL_MS))
+        state = await axios.get(route("grp.chat.staff.slack.large-files.show", { slackChannel, upload: started.upload }))
+            .then((response) => response.data)
+            .catch((e) => e?.response?.status === 404 ? { state: "failed", error: null } : state)
+    }
+    if (state.state === "failed") throw new Error(state.error ?? ctrans("Slack did not accept this file. Try again."))
+    return state.file_id as string | null
+}
+
 const upload = async (item: AttachedFile) => {
     item.status = "uploading"
     item.progress = 0
     item.error = null
+    if (item.file.size > maxBytes.value) {
+        try {
+            item.fileId = await uploadLarge(item)
+            item.status = item.fileId ? "done" : "failed"
+        } catch (e: any) {
+            item.status = "failed"
+            item.error = e?.response ? uploadErrorOf(e) : e?.message ?? ctrans("The file was not uploaded. Try again.")
+        }
+        return
+    }
     const form = new FormData()
     form.append("file", item.file)
     try {
@@ -127,9 +192,9 @@ const addFiles = (files: File[]) => {
         const item: AttachedFile = { key: crypto.randomUUID(), file, progress: 0, status: "uploading", error: null, fileId: null }
         attached.value.push(item)
         const reactive = attached.value[attached.value.length - 1]
-        if (file.size > maxBytes.value) {
+        if (file.size > largestBytes.value) {
             reactive.status = "failed"
-            reactive.error = ctrans("Larger than the :size aiku can send to Slack.", { size: formatBytes(maxBytes.value) })
+            reactive.error = ctrans("Larger than the :size aiku can send to Slack.", { size: formatBytes(largestBytes.value) })
         } else {
             upload(reactive)
         }
@@ -305,7 +370,7 @@ const editLast = () => {
                     <div class="flex items-center gap-x-2">
                         <span class="min-w-0 flex-1 truncate font-medium text-gray-800">{{ item.file.name }}</span>
                         <span class="shrink-0 whitespace-nowrap text-gray-400">{{ formatBytes(item.file.size) }}</span>
-                        <Button v-if="item.status === 'failed' && item.file.size <= maxBytes" type="tertiary" :label="ctrans('Retry')" @click="upload(item)">
+                        <Button v-if="item.status === 'failed' && item.file.size <= largestBytes" type="tertiary" :label="ctrans('Retry')" @click="upload(item)">
                             <template #icon><FontAwesomeIcon icon="fal fa-redo" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                         </Button>
                         <Button type="tertiary" :label="ctrans('Remove')" :disabled="sending" @click="removeFile(item)">

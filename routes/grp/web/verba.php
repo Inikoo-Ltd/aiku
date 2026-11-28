@@ -77,6 +77,9 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     });
     Route::post('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\SendSlackMessage::class)->middleware('throttle:20,1,slack-send')->name('slack.messages.store');
     Route::post('/slack/{slackChannel}/files', \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::class)->middleware('throttle:60,1,slack-upload')->name('slack.files.upload');
+    Route::post('/slack/{slackChannel}/large-files', \App\Actions\Chat\Staff\Slack\Write\UploadSlackLargeFile::class)->middleware('throttle:20,1,slack-upload-large')->name('slack.large-files.start');
+    Route::post('/slack/{slackChannel}/large-files/{upload}/complete', [\App\Actions\Chat\Staff\Slack\Write\UploadSlackLargeFile::class, 'inComplete'])->where('upload', '[0-9a-z]{26}')->middleware('throttle:20,1,slack-upload-large')->name('slack.large-files.complete');
+    Route::get('/slack/{slackChannel}/large-files/{upload}', [\App\Actions\Chat\Staff\Slack\Write\UploadSlackLargeFile::class, 'inStatus'])->where('upload', '[0-9a-z]{26}')->name('slack.large-files.show');
     Route::post('/slack/{slackChannel}/files/send', \App\Actions\Chat\Staff\Slack\Write\SendSlackFiles::class)->middleware('throttle:20,1,slack-send')->name('slack.files.send');
     Route::post('/slack/{slackChannel}/reactions', \App\Actions\Chat\Staff\Slack\Write\ToggleSlackMessageReaction::class)->middleware('throttle:40,1,slack-react')->name('slack.reactions.toggle');
     Route::post('/slack/{slackChannel}/pin', \App\Actions\Chat\Staff\Slack\Write\ToggleSlackMessagePin::class)->middleware('throttle:30,1,slack-pin')->name('slack.pin.toggle');

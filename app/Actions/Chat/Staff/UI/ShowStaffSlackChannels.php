@@ -349,7 +349,7 @@ class ShowStaffSlackChannels extends OrgAction
      * the stand-in bot; without them the box gives the reason. Messages, edits, deletes, reactions and files; no pins or
      * bookmarks (direct).
      *
-     * @return array{allowed: bool, reason: string|null, stand_in: bool, direct: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int, max_file_bytes?: int}
+     * @return array{allowed: bool, reason: string|null, stand_in: bool, direct: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int, max_file_bytes?: int, max_large_file_bytes?: int|null}
      */
     public function directWriteState(User $user, SlackChannel $slackChannel): array
     {
@@ -376,6 +376,7 @@ class ShowStaffSlackChannels extends OrgAction
             'channels'     => [],
             'member_count' => $members->count(),
             'max_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::maxBytes(),
+            'max_large_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackLargeFile::maxBytes(),
         ];
     }
 
@@ -390,7 +391,7 @@ class ShowStaffSlackChannels extends OrgAction
      *
      * When the person can write, also who and which channels the box may mention: live people, members of this channel first.
      *
-     * @return array{allowed: bool, reason: string|null, stand_in: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int, max_file_bytes?: int}
+     * @return array{allowed: bool, reason: string|null, stand_in: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int, max_file_bytes?: int, max_large_file_bytes?: int|null}
      */
     public function writeState(User $user, ?SlackChannel $slackChannel = null): array
     {
@@ -421,6 +422,7 @@ class ShowStaffSlackChannels extends OrgAction
             'channels'     => SlackChannel::visibleTo($user)->orderBy('name')->get(['slack_id', 'name', 'slack_team_id'])->map(fn (SlackChannel $channel) => ['id' => $channel->slack_id, 'label' => (string) $channel->name])->all(),
             'member_count' => $members->count(),
             'max_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::maxBytes(),
+            'max_large_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackLargeFile::maxBytes(),
         ];
     }
 }

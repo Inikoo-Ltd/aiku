@@ -34,7 +34,7 @@ class UploadSlackFile
     use AsAction;
     use WithSlackMessageWrite;
 
-    // shortcut: Octane kills a web request at 45 s, so a file is relayed to Slack inside that; larger files need a path that bypasses a web worker, INI-491 part 5
+    // Octane kills a web request at 45 s, so a file is relayed to Slack inside that; larger files go through UploadSlackLargeFile, INI-491
     public const int MAX_BYTES = 25 * 1024 * 1024;
 
     public const int PENDING_SECONDS = 3600;
