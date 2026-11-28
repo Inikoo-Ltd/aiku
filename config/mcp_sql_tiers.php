@@ -20,7 +20,7 @@ return [
      * Credentials, card tokens, private messages: no tier, not even engineering.
      */
     'never' => [
-        'oauth_*', 'personal_access_tokens', 'passkeys', 'password_resets', 'web_user_password_resets',
+        'oauth_*', 'mcp_oauth_attempts', 'personal_access_tokens', 'passkeys', 'password_resets', 'web_user_password_resets',
         'mit_saved_cards', 'fcm_tokens', 'user_push_subscriptions', 'user_failed_log_ins', 'web_user_failed_logins',
         'allegro_users', 'amazon_users', 'ebay_users', 'magento_users', 'shopify_users', 'tiktok_users', 'wix_users', 'woo_commerce_users',
         'shopify_user_has_fulfilments', 'tiktok_user_has_*', 'wc_user_has_products',

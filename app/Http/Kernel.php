@@ -37,6 +37,7 @@ use App\Http\Middleware\LogAikuPublicPageVisit;
 use App\Http\Middleware\LogRetinaApiRequest;
 use App\Http\Middleware\LogUserRequestMiddleware;
 use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\HandleMcpOauthAuthorization;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\HandleIrisInertiaRequests;
 use App\Http\Middleware\ResetUserPasswordMiddleware;
@@ -105,7 +106,8 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
-            AddFrameOptionsHeader::class
+            AddFrameOptionsHeader::class,
+            HandleMcpOauthAuthorization::class
         ],
 
         'webhooks' => [

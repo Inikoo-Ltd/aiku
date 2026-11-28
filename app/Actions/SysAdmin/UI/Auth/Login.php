@@ -13,13 +13,13 @@ use App\Actions\SysAdmin\User\LogUserFailLogin;
 use App\Actions\Traits\WithLogin;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Models\SysAdmin\User;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
+use Symfony\Component\HttpFoundation\Response;
 
 class Login
 {
@@ -31,7 +31,7 @@ class Login
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request): RedirectResponse
+    public function handle(ActionRequest $request): Response
     {
         $this->ensureIsNotRateLimited($request);
         $rememberMe = $request->boolean('remember');
@@ -85,7 +85,7 @@ class Login
         /** @var User $user */
         $user = auth($this->gate)->user();
 
-        return ProcessSuccessfulLogin::run($user, $request);
+        return ProcessSuccessfulLogin::leaveInertiaForOauth(ProcessSuccessfulLogin::run($user, $request));
     }
 
 

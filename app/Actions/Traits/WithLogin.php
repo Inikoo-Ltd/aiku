@@ -9,7 +9,7 @@
 namespace App\Actions\Traits;
 
 use Illuminate\Auth\Events\Lockout;
-use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -29,7 +29,7 @@ trait WithLogin
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(ActionRequest $request): RedirectResponse | array
+    public function asController(ActionRequest $request): Response | array
     {
         return $this->handle($request);
     }

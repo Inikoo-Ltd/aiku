@@ -14,9 +14,9 @@ import Chart from "primevue/chart"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRobot, faUsers, faDatabase, faTools, faCheck, faTimes } from "@fal"
+import { faRobot, faUsers, faDatabase, faTools, faCheck, faTimes, faPlug } from "@fal"
 
-library.add(faRobot, faUsers, faDatabase, faTools, faCheck, faTimes)
+library.add(faRobot, faUsers, faDatabase, faTools, faCheck, faTimes, faPlug)
 
 const props = defineProps<{
     pageHead: any
@@ -37,14 +37,24 @@ const props = defineProps<{
     }
     data: any
     users: any
+    connections: any
 }>()
 
-const activeTab = ref<'queries' | 'users'>('queries')
+const activeTab = ref<'queries' | 'users' | 'connections'>('queries')
 
 const tabs = [
     { key: 'queries', label: 'Queries', icon: 'fal fa-robot' },
     { key: 'users', label: 'By user', icon: 'fal fa-users' },
+    { key: 'connections', label: 'Connections', icon: 'fal fa-plug' },
 ] as const
+
+const outcomeClass = (outcome: string) => ({
+    connected: 'bg-green-100 text-green-700',
+    failed: 'bg-red-100 text-red-700',
+    no_ai_access: 'bg-red-100 text-red-700',
+    login_required: 'bg-amber-100 text-amber-700',
+    two_fa_required: 'bg-amber-100 text-amber-700',
+}[outcome] ?? 'bg-slate-100 text-slate-600')
 
 const dailyChart = computed(() => ({
     labels: props.insights.daily.map(day => day.date.slice(5)),
@@ -251,6 +261,29 @@ const formatArguments = (args: Record<string, unknown> | null) => {
 
         <template #cell(last_used_at)="{ item }">
             <span class="whitespace-nowrap text-gray-500">{{ useFormatTime(item.last_used_at, { formatTime: 'hms', keepTimezone: true }) }}</span>
+        </template>
+    </Table>
+
+    <Table v-show="activeTab === 'connections'" :resource="connections" name="connections" class="mt-2">
+        <template #cell(created_at)="{ item }">
+            <span class="whitespace-nowrap text-gray-500">{{ useFormatTime(item.created_at, { formatTime: 'hms', keepTimezone: true }) }}</span>
+        </template>
+
+        <template #cell(username)="{ item }">
+            <span v-if="item.username" class="font-medium">{{ item.username }}</span>
+            <span v-else class="text-gray-400 italic">{{ ctrans('Not logged in') }}</span>
+        </template>
+
+        <template #cell(outcome)="{ item }">
+            <span class="whitespace-nowrap text-xs px-2 py-0.5 rounded-full" :class="outcomeClass(item.outcome)" v-tooltip="item.error">{{ item.outcome_label }}</span>
+        </template>
+
+        <template #cell(ip)="{ item }">
+            <span class="whitespace-nowrap font-mono text-xs text-gray-500">{{ item.ip }}</span>
+        </template>
+
+        <template #cell(user_agent)="{ item }">
+            <span class="text-xs text-gray-500 line-clamp-1" v-tooltip="item.user_agent">{{ item.user_agent }}</span>
         </template>
     </Table>
 </template>

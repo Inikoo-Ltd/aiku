@@ -11,6 +11,10 @@ import Layout from '@/Layouts/GrpAuth.vue'
 import { Passkeys, UserCancelledError } from '@laravel/passkeys'
 defineOptions({ layout: Layout })
 
+defineProps<{
+    connectingAssistant?: string | null
+}>()
+
 const form = useForm({
     username: '',
     password: '',
@@ -80,6 +84,9 @@ onBeforeUnmount(() => {
 <template>
 
     <Head title="Login" />
+    <div v-if="connectingAssistant" class="mb-6 rounded-md border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-3 text-sm">
+        {{ ctrans('Log in to Aiku to connect :assistant. You will come straight back to finish.', { assistant: connectingAssistant }) }}
+    </div>
     <form class="space-y-6" @submit.prevent="submit">
         <div>
             <label for="login" class="block text-sm font-medium text-gray-700">{{ ctrans('Username') }}</label>

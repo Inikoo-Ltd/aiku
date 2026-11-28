@@ -150,7 +150,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(19)
+        ->and($group->roles()->count())->toBe(20)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -158,14 +158,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(18)
+    expect($group->jobPositions()->count())->toBe(19)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(18)
+    expect($group->jobPositions()->count())->toBe(19)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -218,7 +218,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(12)
-        ->and($group->roles()->count())->toBe(31)
+        ->and($group->roles()->count())->toBe(32)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -1902,6 +1902,16 @@ test('UI sysadmin ai analytics index', function (User $user) {
         'duration_ms' => 120,
     ]);
 
+    \App\Models\SysAdmin\McpOauthAttempt::create([
+        'group_id'    => group()->id,
+        'user_id'     => $user->id,
+        'client_id'   => (string) \Illuminate\Support\Str::uuid(),
+        'client_name' => 'ChatGPT',
+        'outcome'     => \App\Enums\SysAdmin\McpOauthAttempt\McpOauthAttemptOutcomeEnum::CONNECTED,
+        'status_code' => 302,
+        'ip'          => '203.0.113.7',
+    ]);
+
     $response = get(route('grp.sysadmin.mcp.index'));
     $response->assertInertia(function (AssertableInertia $page) use ($user) {
         $page
@@ -1911,7 +1921,10 @@ test('UI sysadmin ai analytics index', function (User $user) {
             ->has('data.data', 1)
             ->has('users.data', 1)
             ->where('users.data.0.username', $user->username)
-            ->where('users.data.0.calls', 1);
+            ->where('users.data.0.calls', 1)
+            ->where('connections.data.0.username', $user->username)
+            ->where('connections.data.0.outcome', 'connected')
+            ->where('connections.data.0.ip', '203.0.113.7');
     });
 })->depends('SetUserAuthorisedModels command');
 

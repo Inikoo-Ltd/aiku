@@ -10,7 +10,6 @@
 namespace App\Actions\SysAdmin\UI\Auth;
 
 use Illuminate\Support\Arr;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +17,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use PragmaRX\Google2FAQRCode\Google2FA;
 use PragmaRX\Google2FALaravel\Support\Authenticator;
+use Symfony\Component\HttpFoundation\Response;
 
 class Validate2FA
 {
@@ -28,7 +28,7 @@ class Validate2FA
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request): RedirectResponse
+    public function handle(ActionRequest $request): Response
     {
         $throttleKey = '2fa:'.$request->user()->id;
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -58,7 +58,7 @@ class Validate2FA
 
         Session::put('reloadLayout', '1');
 
-        return redirect()->route('grp.dashboard.show');
+        return ProcessSuccessfulLogin::leaveInertiaForOauth(redirect()->intended(route('grp.dashboard.show')));
     }
 
     public function rules(): array
@@ -71,7 +71,7 @@ class Validate2FA
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): Response
     {
         return $this->handle($request);
     }

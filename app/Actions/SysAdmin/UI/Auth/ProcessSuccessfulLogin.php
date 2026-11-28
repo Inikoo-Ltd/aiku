@@ -18,13 +18,29 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Inertia\Inertia;
 use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use PragmaRX\Google2FALaravel\Support\Authenticator;
+use Symfony\Component\HttpFoundation\Response;
 
 class ProcessSuccessfulLogin implements PasskeyLoginResponse
 {
     use AsObject;
+
+    /**
+     * The staff login is an Inertia form, and the page that connects an AI assistant is plain
+     * HTML. Following that redirect inside Inertia would open the page in an error modal, so
+     * the browser is sent there with a full page load.
+     */
+    public static function leaveInertiaForOauth(RedirectResponse $redirect): Response
+    {
+        if (parse_url($redirect->getTargetUrl(), PHP_URL_PATH) === '/oauth/authorize') {
+            return Inertia::location($redirect->getTargetUrl());
+        }
+
+        return $redirect;
+    }
 
     public function handle(User $user, Request $request): RedirectResponse
     {

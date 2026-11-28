@@ -78,6 +78,10 @@ class Handler extends ExceptionHandler
             ], 401);
         }
 
+        if ($exception instanceof \Laravel\Passport\Exceptions\AuthenticationException) {
+            return redirect()->guest(route('grp.login.show'));
+        }
+
         return parent::unauthenticated($request, $exception);
     }
 

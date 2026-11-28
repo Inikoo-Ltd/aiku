@@ -11,10 +11,12 @@ namespace App\Actions\SysAdmin\UI;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\GetMcpAnalytics;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Http\Resources\SysAdmin\McpOauthAttemptsResource;
 use App\Http\Resources\SysAdmin\McpRequestsResource;
 use App\Http\Resources\SysAdmin\McpRequestUsersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\McpOauthAttempt;
 use App\Models\SysAdmin\McpRequest;
 use App\Services\QueryBuilder;
 use Closure;
@@ -139,6 +141,63 @@ class IndexMcpRequests extends OrgAction
             ->withQueryString();
     }
 
+    public function handleConnections(Group $group, $prefix = 'connections'): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereRaw('users.username ILIKE ?', ["%$value%"])
+                    ->orWhereRaw('mcp_oauth_attempts.ip ILIKE ?', ["%$value%"])
+                    ->orWhereRaw('mcp_oauth_attempts.client_name ILIKE ?', ["%$value%"]);
+            });
+        });
+
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+        return QueryBuilder::for(McpOauthAttempt::class)
+            ->where(fn ($query) => $query->where('mcp_oauth_attempts.group_id', $group->id)->orWhereNull('mcp_oauth_attempts.group_id'))
+            ->leftJoin('users', 'users.id', '=', 'mcp_oauth_attempts.user_id')
+            ->select([
+                'mcp_oauth_attempts.id',
+                'mcp_oauth_attempts.created_at',
+                'mcp_oauth_attempts.client_name',
+                'mcp_oauth_attempts.outcome',
+                'mcp_oauth_attempts.error',
+                'mcp_oauth_attempts.ip',
+                'mcp_oauth_attempts.user_agent',
+                'users.username',
+            ])
+            ->defaultSort('-created_at')
+            ->allowedSorts(['created_at', 'username', 'outcome'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function connectionsTableStructure($prefix = 'connections'): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+
+            $table
+                ->withGlobalSearch()
+                ->withTitle(title: __('AI assistant connections'))
+                ->withLabelRecord([__('attempt'), __('attempts')])
+                ->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true)
+                ->column(key: 'username', label: __('User'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'client_name', label: __('Assistant'), canBeHidden: false)
+                ->column(key: 'outcome', label: __('Result'), canBeHidden: false, sortable: true)
+                ->column(key: 'ip', label: __('IP'), canBeHidden: false, searchable: true)
+                ->column(key: 'user_agent', label: __('Browser'))
+                ->defaultSort('-created_at');
+        };
+    }
+
     public function tableStructure(Group $group, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($group, $prefix) {
@@ -226,10 +285,12 @@ class IndexMcpRequests extends OrgAction
                 ],
                 'insights' => GetMcpAnalytics::run($this->group),
                 'data'     => McpRequestsResource::collection($mcpRequests),
-                'users'    => McpRequestUsersResource::collection($this->handleUsers($this->group)),
+                'users'       => McpRequestUsersResource::collection($this->handleUsers($this->group)),
+                'connections' => McpOauthAttemptsResource::collection($this->handleConnections($this->group)),
             ]
         )->table($this->tableStructure($this->group))
-            ->table($this->usersTableStructure());
+            ->table($this->usersTableStructure())
+            ->table($this->connectionsTableStructure());
     }
 
     public function getBreadcrumbs(): array
