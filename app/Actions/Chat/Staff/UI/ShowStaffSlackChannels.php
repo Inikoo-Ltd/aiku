@@ -87,7 +87,7 @@ class ShowStaffSlackChannels extends OrgAction
     }
 
     /**
-     * A Slack DM or group DM opens on the V·Ds tab, for its members only (SlackChannel::directVisibleTo), read only.
+     * A Slack DM or group DM opens on the V·Ds tab, for its members only (SlackChannel::directVisibleTo); an opted-in member writes in it (INI-593).
      */
     public function inDirectSlackChannel(SlackChannel $slackChannel, ActionRequest $request): Group
     {
@@ -301,7 +301,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
                     'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),
-                    'write'        => $slackChannel->is_private ? null : $this->writeState($request->user(), $slackChannel),
+                    'write'        => $slackChannel->direct_type ? $this->directWriteState($request->user(), $slackChannel) : ($slackChannel->is_private ? null : $this->writeState($request->user(), $slackChannel)),
                     'wallpaper'        => StaffChatWallpaper::forSlackChannel($request->user(), $slackChannel->id),
                     'wallpaper_is_set' => (bool) Arr::get($request->user()->settings, "chat_wallpaper_channels.$slackChannel->id"),
                 ] : null,
@@ -313,6 +313,47 @@ class ShowStaffSlackChannels extends OrgAction
                     : null,
             ]
         );
+    }
+
+    /**
+     * A Slack DM or group DM is written to only with the person's own token and their private opt-in (INI-593), never by
+     * the stand-in bot; without them the box gives the reason. Messages, edits, deletes, reactions and files; no pins or
+     * bookmarks (direct).
+     *
+     * @return array{allowed: bool, reason: string|null, stand_in: bool, direct: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int, max_file_bytes?: int}
+     */
+    public function directWriteState(User $user, SlackChannel $slackChannel): array
+    {
+        $allowed = true;
+        $reason  = self::isClosedDirect($slackChannel) ? __('This conversation is closed in Slack, the other person is no longer there.') : SlackWriteAccess::directReasonUnavailable($user);
+        $state   = [
+            'allowed'     => $allowed,
+            'reason'      => $reason,
+            'stand_in'    => false,
+            'direct'      => true,
+            'connect_url' => $reason && !self::isClosedDirect($slackChannel) && app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) ? route('grp.profile.edit', ['section' => 'slack']) : null,
+        ];
+        if (!$allowed || $reason) {
+            return $state;
+        }
+
+        $members = $slackChannel->members()->pluck('slack_user_id');
+
+        return [
+            ...$state,
+            'people'       => SlackUser::whereIn('slack_id', $members)->where('is_bot', false)->where('is_deleted', false)->get(['slack_id', 'display_name', 'real_name'])
+                ->map(fn (SlackUser $person) => ['id' => $person->slack_id, 'label' => $person->display_name ?: $person->real_name ?: $person->slack_id])
+                ->sortBy('label')->values()->all(),
+            'channels'     => [],
+            'member_count' => $members->count(),
+            'max_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::maxBytes(),
+        ];
+    }
+
+    public static function isClosedDirect(SlackChannel $slackChannel): bool
+    {
+        return $slackChannel->is_archived || ($slackChannel->direct_type === 'im'
+            && SlackUser::whereIn('slack_id', $slackChannel->members()->select('slack_user_id'))->where('is_deleted', true)->exists());
     }
 
     /**

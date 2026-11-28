@@ -73,6 +73,46 @@ class StaffConversationResource extends JsonResource
         ];
     }
 
+    /**
+     * An older Verba DM between two people who also have a Slack DM in Verba points to it (INI-593), so they carry on there.
+     * The viewer's Slack DMs are read once per request: other person's aiku user id => Slack DM id.
+     */
+    protected function slackDirectUrl(?User $viewer, \Illuminate\Http\Request $request): ?string
+    {
+        if (!$viewer || $this->type !== 'dm') {
+            return null;
+        }
+        $key = 'staff-chat-slack-direct-map:'.$viewer->id;
+        if (!$request->attributes->has($key)) {
+            $request->attributes->set($key, self::slackDirectMap($viewer));
+        }
+        $other = $this->participants->first(fn (User $user) => $user->id !== $viewer->id);
+        $id    = $other ? ($request->attributes->get($key)[$other->id] ?? null) : null;
+
+        return $id ? route('grp.chat.staff.direct.slack.show', $id) : null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public static function slackDirectMap(User $viewer): array
+    {
+        $ims = \App\Models\Chat\SlackChannel::directVisibleTo($viewer)->where('direct_type', 'im')->where('is_archived', false)->pluck('id');
+        if ($ims->isEmpty()) {
+            return [];
+        }
+
+        return \App\Models\Chat\SlackChannelMember::query()
+            ->join('slack_users', 'slack_users.slack_id', '=', 'slack_channel_members.slack_user_id')
+            ->whereIn('slack_channel_members.slack_channel_id', $ims)
+            ->whereNotIn('slack_channel_members.slack_user_id', \App\Models\Chat\SlackChannel::linkedSlackIds($viewer))
+            ->whereNotNull('slack_users.user_id')
+            ->where('slack_users.user_id', '!=', $viewer->id)
+            ->orderBy('slack_channel_members.slack_channel_id')
+            ->pluck('slack_channel_members.slack_channel_id', 'slack_users.user_id')
+            ->all();
+    }
+
     public function toArray($request): array
     {
         $viewer       = $request->user();
@@ -110,6 +150,7 @@ class StaffConversationResource extends JsonResource
             'last_message_user_id' => $this->last_message_user_id ?? null,
             'unread_count'    => (int) ($this->unread_count ?? 0),
             'has_mention'     => (bool) ($this->has_mention ?? false),
+            'slack_direct_url' => $this->slackDirectUrl($viewer, $request),
         ];
     }
 }

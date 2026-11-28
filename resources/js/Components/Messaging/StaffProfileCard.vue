@@ -92,7 +92,7 @@ const openDirectChat = async () => {
     try {
         const conversation = await store.openWithUser(card.value.id, { openWindow: false })
         closeStaffProfile()
-        router.visit(route("grp.chat.staff.show", conversation.ulid))
+        if (conversation) router.visit(route("grp.chat.staff.show", conversation.ulid))
     } finally {
         isWorking.value = false
     }
@@ -102,9 +102,9 @@ const call = async (kind: StaffCallKind) => {
     if (!card.value || isWorking.value) return
     isWorking.value = true
     try {
-        const conversation = await store.openWithUser(card.value.id, { openWindow: false })
+        const conversation = await store.openWithUser(card.value.id, { openWindow: false, forCall: true })
         closeStaffProfile()
-        calls.start(conversation.ulid, kind)
+        if (conversation) calls.start(conversation.ulid, kind)
     } finally {
         isWorking.value = false
     }

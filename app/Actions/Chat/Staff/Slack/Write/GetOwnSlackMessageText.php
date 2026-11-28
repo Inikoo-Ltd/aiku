@@ -22,6 +22,11 @@ class GetOwnSlackMessageText
     use AsAction;
     use WithSlackMessageWrite;
 
+    protected function writesDirect(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [

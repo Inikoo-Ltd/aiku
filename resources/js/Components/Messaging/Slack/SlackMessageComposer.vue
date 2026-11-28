@@ -25,6 +25,7 @@ export interface SlackWriteState {
     allowed: boolean
     reason: string | null
     stand_in?: boolean
+    direct?: boolean
     connect_url: string | null
     people?: DeskPerson[]
     channels?: DeskPerson[]
@@ -268,7 +269,7 @@ const editLast = () => {
     <div v-if="write.allowed" ref="rootEl" class="shrink-0 bg-white px-4 pb-4 pt-1">
         <p v-if="write.reason && !write.stand_in" class="text-xs text-gray-500">
             {{ write.reason }}
-            <a v-if="write.connect_url" :href="write.connect_url" class="font-medium text-gray-700 underline hover:text-gray-900">{{ ctrans("Connect Slack") }}</a>
+            <a v-if="write.connect_url" :href="write.connect_url" class="font-medium text-gray-700 underline hover:text-gray-900">{{ write.direct ? ctrans("Open Slack settings") : ctrans("Connect Slack") }}</a>
         </p>
         <template v-else>
             <div v-if="offerConnect" class="mb-1.5 flex items-start gap-x-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
@@ -325,7 +326,7 @@ const editLast = () => {
             <div class="flex items-center gap-x-3 pt-1.5">
                 <label v-if="threadTs && !attached.length" class="inline-flex cursor-pointer items-center gap-x-2 text-[13px] text-[#1d1c1d]">
                     <Checkbox v-model="alsoToChannel" binary size="small" :disabled="sending" input-id="desk-also-to-channel" />
-                    {{ channelName ? ctrans("Also send to #:channel", { channel: channelName }) : ctrans("Also send to channel") }}
+                    {{ write.direct ? ctrans("Also send to the conversation") : channelName ? ctrans("Also send to #:channel", { channel: channelName }) : ctrans("Also send to channel") }}
                 </label>
                 <p v-if="error" class="ml-auto text-xs text-red-600" role="alert">{{ error }}</p>
                 <p v-else class="ml-auto hidden text-xxs text-gray-400 sm:block">{{ ctrans("Shift + Enter to add a new line") }}</p>

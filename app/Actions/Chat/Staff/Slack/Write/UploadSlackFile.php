@@ -48,6 +48,11 @@ class UploadSlackFile
         'application/vnd.oasis.opendocument.text', 'application/vnd.oasis.opendocument.spreadsheet', 'application/vnd.oasis.opendocument.presentation',
     ];
 
+    protected function writesDirect(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
@@ -98,7 +103,7 @@ class UploadSlackFile
     public function handle(User $user, SlackChannel $slackChannel, UploadedFile $file): array
     {
         $this->ensureMayWrite($user, $slackChannel);
-        if (!SlackChannel::kept()->whereKey($slackChannel->id)->exists()) {
+        if (!$slackChannel->direct_type && !SlackChannel::kept()->whereKey($slackChannel->id)->exists()) {
             $this->refuse(__('Files cannot be sent to this channel.'));
         }
 
@@ -149,8 +154,15 @@ class UploadSlackFile
         }
     }
 
+    /**
+     * A DM file is not kept here: its private copy is made with the author's own token once Slack's event lists it, so the
+     * copy always belongs to a message and erasing the person's words finds it.
+     */
     private function keepCopy(SlackChannel $slackChannel, string $slackId, string $name, string $mime, int $size, UploadedFile $file): void
     {
+        if ($slackChannel->direct_type) {
+            return;
+        }
         $slackFile = SlackFile::updateOrCreate(['slack_id' => $slackId, 'is_private' => false], [
             'group_id'  => $slackChannel->group_id,
             'name'      => $name,

@@ -6,11 +6,11 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue"
-import { usePage, router } from "@inertiajs/vue3"
+import { usePage, router, Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { formatDistanceToNow } from "date-fns"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink } from "@fal"
+import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink, faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import FilesAndLinksPanel, { type SharedItem } from "@/Components/Messaging/FilesAndLinksPanel.vue"
@@ -39,7 +39,7 @@ import StaffHelpGrantButton from "@/Components/Messaging/Help/StaffHelpGrantButt
 import ChatWallpaperButton from "@/Components/Messaging/ChatWallpaperButton.vue"
 import { hasWallpaper, useBubbles, wallpaperStyle } from "@/Components/Messaging/chatWallpaper"
 
-library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink)
+library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink, faInfoCircle)
 
 const GifPicker = defineAsyncComponent(() => import("./GifPicker.vue"))
 const EmojiPicker = defineAsyncComponent(() => import("./EmojiPicker.vue"))
@@ -1109,6 +1109,11 @@ const onReactionPick = (emoji: string) => {
             </div>
         </Popover>
 
+        <div v-if="conversation.slack_direct_url" v-show="activeTab === 'messages'" class="flex shrink-0 items-center gap-x-2 border-t border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+            <FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-400" fixed-width aria-hidden="true" />
+            <span class="flex-1">{{ ctrans("You also have a Slack conversation together. Write there so it reaches Slack too.") }}</span>
+            <Link :href="conversation.slack_direct_url" class="shrink-0 whitespace-nowrap font-medium text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the Slack conversation") }}</Link>
+        </div>
         <div v-if="leftAt" v-show="activeTab === 'messages'" class="shrink-0 border-t border-gray-200 bg-gray-50 px-3 py-3 text-center text-xs text-gray-500" :style="fullScreen ? { paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' } : {}">
             <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
             {{ ctrans("You were taken off this on :date. You can read the chat up to then; you will see everything again if you are added back.", { date: useFormatTime(leftAt, { formatTime: 'hm' }) }) }}

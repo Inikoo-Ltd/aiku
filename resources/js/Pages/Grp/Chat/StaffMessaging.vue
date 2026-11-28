@@ -151,7 +151,7 @@ const onSlackLive = (event: SlackLiveEvent) => {
     const state = slackUnread.value[event.channel_id]
     const message = event.message
     if (!message) {
-        if (state && event.kind === "new" && !(state.lastReadTs && event.ts <= state.lastReadTs) && !state.counted.includes(event.ts)) {
+        if (state && event.kind === "new" && !(event.user_id != null && event.user_id === myId.value) && !(state.lastReadTs && event.ts <= state.lastReadTs) && !state.counted.includes(event.ts)) {
             state.counted.push(event.ts)
             state.count++
         }
@@ -225,6 +225,7 @@ const showArchived = computed(() => !isCollapsed("archived") || (showSlackChanne
 
 const store = useStaffMessaging()
 const myId = computed(() => usePage().props?.auth?.user?.id)
+useSlackLive(() => (knownDirectChannels.value.length && myId.value ? "grp.slack-direct." + myId.value : null), onSlackLive)
 const wallpaperMode = computed<string | undefined>(() => (usePage().props as any)?.auth?.user?.settings?.chat_wallpapers?.stored?.mode)
 
 const selectedUlid = ref<string | null>(window.innerWidth < 768 ? null : props.selected_ulid)
@@ -314,7 +315,7 @@ const selectConversation = (ulid: string) => {
 
 const startChatWith = async (coworker: StaffCoworker) => {
     const conversation = await store.openWithUser(coworker.id, { openWindow: false })
-    selectConversation(conversation.ulid)
+    if (conversation) selectConversation(conversation.ulid)
 }
 
 const closeConversation = () => {

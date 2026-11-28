@@ -9,8 +9,10 @@
 namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Actions\Chat\Staff\Slack\NotifySlackMentions;
+use App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
 use App\Events\SlackChannelMessageChanged;
+use App\Events\SlackDirectMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackUser;
@@ -46,6 +48,11 @@ class SendSlackMessage
 
     public const int EVERYONE_CONFIRM_ABOVE = 6;
 
+    protected function writesDirect(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
@@ -70,7 +77,8 @@ class SendSlackMessage
      */
     public function handle(User $user, SlackChannel $slackChannel, string $text, ?string $threadTs, string $idempotencyKey, bool $alsoToChannel = false, bool $notifyEveryone = false): array
     {
-        if (!$slackChannel->isVisibleTo($user) || !SlackChannel::kept()->whereKey($slackChannel->id)->exists() || $slackChannel->is_archived) {
+        $isDirect = $slackChannel->direct_type !== null;
+        if ($isDirect ? !self::mayWriteDirect($user, $slackChannel) : (!$slackChannel->isVisibleTo($user) || !SlackChannel::kept()->whereKey($slackChannel->id)->exists() || $slackChannel->is_archived)) {
             $this->refuse(__('Messages cannot be sent to this channel.'));
         }
         if (!SlackWriteAccess::allows($user)) {
@@ -108,7 +116,7 @@ class SendSlackMessage
             } else {
                 Cache::forget($claimKey);
             }
-            $this->refuse(self::errorSentence($exception->slackError));
+            $this->refuse($isDirect ? self::directErrorSentence($exception->slackError, $slackChannel) : self::errorSentence($exception->slackError));
         } catch (Throwable $exception) {
             Cache::forget($claimKey);
             report($exception);
@@ -126,7 +134,10 @@ class SendSlackMessage
             'ts' => $ts, 'thread_ts' => $rootTs, 'user' => $client->slackUserId(), 'text' => $text, ...($isBroadcast ? ['subtype' => 'thread_broadcast'] : []), ...$posted,
             ...($client->isStandIn() ? ['user' => $client->slackUserId(), 'subtype' => $isBroadcast ? 'thread_broadcast' : null] : []),
         ]);
-        if ($message?->wasRecentlyCreated) {
+        if ($message && $isDirect) {
+            SlackDirectMessageChanged::announce($slackChannel, $message, 'new');
+        }
+        if ($message?->wasRecentlyCreated && !$isDirect) {
             rescue(fn () => SlackChannelMessageChanged::dispatch($slackChannel, $message, 'new'));
             rescue(fn () => NotifySlackMentions::run($message));
         }
@@ -215,6 +226,23 @@ class SendSlackMessage
     }
 
     /**
+     * A DM whose other person left Slack is archived there: Verba marks it closed too, so the box says so from then on.
+     */
+    public static function directErrorSentence(string $code, SlackChannel $slackChannel): string
+    {
+        if (in_array($code, ['is_archived', 'user_disabled', 'user_not_found', 'cannot_dm_bot'], true)) {
+            $slackChannel->forceFill(['is_archived' => true])->save();
+
+            return __('This conversation is closed in Slack, the other person is no longer there.');
+        }
+
+        return match ($code) {
+            'channel_not_found', 'not_in_channel' => __('This conversation is no longer in Slack.'),
+            default                               => self::errorSentence($code),
+        };
+    }
+
+    /**
      * Slack threads are one level deep: a reply to a reply goes to the thread's first message.
      */
     public function threadRoot(SlackChannel $slackChannel, string $threadTs): string
@@ -234,10 +262,11 @@ class SendSlackMessage
      */
     private function storeOnce(SlackChannel $slackChannel, array $message): ?SlackMessage
     {
+        $store = fn () => $slackChannel->direct_type ? StoreSlackDirectMessage::make()->store($slackChannel, $message) : StoreSlackMessage::make()->store($slackChannel, $message);
         try {
-            return StoreSlackMessage::make()->store($slackChannel, $message);
+            return $store();
         } catch (UniqueConstraintViolationException) {
-            return StoreSlackMessage::make()->store($slackChannel, $message);
+            return $store();
         }
     }
 

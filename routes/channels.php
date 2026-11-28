@@ -72,6 +72,10 @@ Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
 });
 
+Broadcast::channel('grp.slack-direct.{userID}', function (User $user, int $userID) {
+    return $userID === $user->id;
+});
+
 Broadcast::channel('grp.slack.{groupId}', function (User $user, int $groupId) {
     return $user->group_id === $groupId && SlackChannel::visibleTo($user)->exists();
 });

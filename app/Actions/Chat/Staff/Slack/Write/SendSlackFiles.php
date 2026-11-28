@@ -31,9 +31,19 @@ class SendSlackFiles
 
     public const int SENT_MARKER_SECONDS = 600;
 
+    public static function sentMarkerValue(string $slackUserId, string $channelSlackId): string
+    {
+        return $slackUserId.':'.$channelSlackId;
+    }
+
     public static function sentMarkerKey(string $fileId): string
     {
         return 'slack-file-sent-from-aiku:'.$fileId;
+    }
+
+    protected function writesDirect(): bool
+    {
+        return true;
     }
 
     public function rules(): array
@@ -55,7 +65,7 @@ class SendSlackFiles
     public function handle(User $user, SlackChannel $slackChannel, array $fileIds, ?string $text, ?string $threadTs, string $idempotencyKey, bool $notifyEveryone = false): array
     {
         $this->ensureMayWrite($user, $slackChannel);
-        if (!SlackChannel::kept()->whereKey($slackChannel->id)->exists()) {
+        if (!$slackChannel->direct_type && !SlackChannel::kept()->whereKey($slackChannel->id)->exists()) {
             $this->refuse(__('Files cannot be sent to this channel.'));
         }
 
@@ -65,7 +75,7 @@ class SendSlackFiles
             if (!$name) {
                 $this->refuse(__('A file was not uploaded or took too long to send. Attach it again.'));
             }
-            $titles[] = ['id' => $id, 'title' => (string) (SlackFile::where('slack_id', $id)->where('is_private', false)->value('name') ?: $name)];
+            $titles[] = ['id' => $id, 'title' => (string) (SlackFile::where('slack_id', $id)->where('is_private', $slackChannel->direct_type !== null)->value('name') ?: $name)];
         }
 
         $sender  = SendSlackMessage::make();
@@ -86,7 +96,7 @@ class SendSlackFiles
         }
 
         foreach ($titles as $title) {
-            Cache::put(self::sentMarkerKey($title['id']), true, self::SENT_MARKER_SECONDS);
+            Cache::put(self::sentMarkerKey($title['id']), self::sentMarkerValue($client->slackUserId(), $slackChannel->slack_id), self::SENT_MARKER_SECONDS);
         }
         try {
             $client->call('files.completeUploadExternal', [

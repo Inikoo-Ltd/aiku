@@ -26,6 +26,7 @@ use App\Notifications\SlackMentionNotification;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -613,6 +614,34 @@ describe('files sent from aiku, INI-465', function () {
 
         actingAs($this->writer)->postJson(route('grp.chat.staff.slack.files.send', ['slackChannel' => $other->id]), ['file_ids' => [$fileId], 'idempotency_key' => Str::uuid()->toString()])->assertUnprocessable();
     });
+
+    test('a file sent to a Slack DM from Verba goes with the person token, keeps no copy until Slack\'s file_share event, which stores the message once and queues the private copy with the author\'s token, INI-593', function () {
+        Config::set('services.slack.team_id', 'T1');
+        \Illuminate\Support\Facades\Queue::fake();
+        $dm = slackDirectForSend($this, 'im', ["UWRITE{$this->s}", "UREAD{$this->s}"]);
+        optInPrivately($this);
+
+        $fileId = ($this->upload)(UploadedFile::fake()->image('payslip.png', 20, 20), null, $dm)->assertOk()->json('file_id');
+        expect(SlackFile::where('slack_id', $fileId)->exists())->toBeFalse();
+
+        actingAs($this->writer)->postJson(route('grp.chat.staff.slack.files.send', ['slackChannel' => $dm->id]), ['file_ids' => [$fileId], 'idempotency_key' => Str::uuid()->toString()])->assertOk();
+        $complete = Http::recorded(fn (Request $request) => str_contains($request->url(), 'files.completeUploadExternal'))->last()[0];
+        expect($complete->header('Authorization')[0])->toBe('Bearer '.$this->token)
+            ->and($complete['channel_id'])->toBe($dm->slack_id);
+
+        $ts    = sprintf('%d.000321', now()->timestamp);
+        $share = ['type' => 'message', 'subtype' => 'file_share', 'channel' => $dm->slack_id, 'channel_type' => 'im', 'user' => "UWRITE{$this->s}", 'bot_id' => 'B0AIKU', 'text' => '', 'ts' => $ts, 'files' => [['id' => $fileId, 'name' => 'payslip.png', 'mimetype' => 'image/png']]];
+        \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->handle($share, ['team_id' => 'T1', 'user_id' => "UWRITE{$this->s}", 'is_bot' => false]);
+        \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->handle($share, ['team_id' => 'T1', 'user_id' => "UWRITE{$this->s}", 'is_bot' => false]);
+        $rows = ($this->messages)($dm);
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0]->sent_from_aiku)->toBeTrue()
+            ->and(SlackFile::where('slack_id', $fileId)->where('is_private', false)->exists())->toBeFalse();
+        CopySlackMessageFile::assertPushed(2);
+        expect(CopySlackMessageFile::privateReadingToken($rows[0]))->toBe($this->token);
+
+        ($this->upload)(UploadedFile::fake()->image('not-mine.png', 20, 20), $this->bob, $dm)->assertForbidden();
+    });
 });
 
 test('Slack second workspace: a message in an aw-advantage channel goes through that workspace\'s bot under the person\'s own account there, never their main token; reactions there are refused, INI-540', function () {
@@ -645,4 +674,194 @@ test('Slack second workspace: a message in an aw-advantage channel goes through 
 
     ($this->send)($this->general, 'Main still uses the main token')->assertOk();
     expect(($this->posts)()->last()[0]->header('Authorization')[0])->toBe('Bearer '.$this->token);
+});
+
+function slackDirectForSend(object $test, string $type, array $slackIds): SlackChannel
+{
+    $channel = SlackChannel::create(['group_id' => $test->group->id, 'slack_id' => strtoupper($type).'D'.Str::upper(Str::random(8)), 'direct_type' => $type, 'is_private' => true, 'is_public' => false, 'is_member' => false]);
+    \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->addMembers($channel, $slackIds);
+
+    return $channel;
+}
+
+function optInPrivately(object $test): SlackConnection
+{
+    $connection = SlackConnection::where('user_id', $test->writer->id)->sole();
+    $connection->forceFill(['scopes' => implode(',', [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES])])->save();
+    $connection->grantPrivateConsent(SlackWriteAccess::PRIVATE_CONSENT_VERSION, SlackWriteAccess::PRIVATE_TERMS_VERSION);
+
+    return $connection;
+}
+
+test('an opted-in member replies, edits and deletes in a Slack DM from Verba with their own token, stored once and never broadcast; the echo adds nothing; non-members and other writes are refused, INI-593', function () {
+    Event::fake([SlackChannelMessageChanged::class, BroadcastPersonalNotification::class, \App\Events\SlackDirectMessageChanged::class]);
+    Config::set('services.slack.team_id', 'T1');
+    $dm = slackDirectForSend($this, 'im', ["UWRITE{$this->s}", "UREAD{$this->s}"]);
+    optInPrivately($this);
+
+    actingAs($this->writer)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.write.allowed', true)->where('slack_channel.write.reason', null)->where('slack_channel.write.direct', true)->where('slack_channel.write.stand_in', false));
+
+    ($this->send)($dm, 'Lunch at one?')->assertOk();
+    $rows = ($this->messages)($dm);
+    $post = ($this->posts)()->last()[0];
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0]->only(['slack_user_id', 'user_id', 'text', 'sent_from_aiku']))->toBe(['slack_user_id' => "UWRITE{$this->s}", 'user_id' => $this->writer->id, 'text' => 'Lunch at one?', 'sent_from_aiku' => true])
+        ->and($post->header('Authorization')[0])->toBe('Bearer '.$this->token)
+        ->and($post['channel'])->toBe($dm->slack_id)
+        ->and($post['username'] ?? null)->toBeNull()
+        ->and(($this->kinds)())->toBe([]);
+    $announced = fn () => Event::dispatched(\App\Events\SlackDirectMessageChanged::class)->map(fn (array $args) => $args[0]->kind)->values()->all();
+    $event     = Event::dispatched(\App\Events\SlackDirectMessageChanged::class)->first()[0];
+    expect($announced())->toBe(['new'])
+        ->and($event->broadcastWith()['message'])->toBeNull()
+        ->and($event->broadcastWith()['user_id'])->toBe($this->writer->id)
+        ->and(collect($event->broadcastOn())->map(fn ($channel) => $channel->name)->sort()->values()->all())->toBe(collect(['private-grp.slack-direct.'.$this->writer->id, 'private-grp.slack-direct.'.$this->reader->id])->sort()->values()->all());
+
+    $ts       = $rows[0]->ts;
+    $fromApp  = ['type' => 'message', 'channel' => $dm->slack_id, 'channel_type' => 'im', 'user' => "UWRITE{$this->s}", 'bot_id' => 'B0AIKU', 'app_id' => 'A0AIKU', 'text' => 'Lunch at one?', 'ts' => $ts];
+    $byWriter = ['team_id' => 'T1', 'user_id' => "UWRITE{$this->s}", 'is_bot' => false];
+    \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->handle($fromApp, $byWriter);
+    expect(($this->messages)($dm))->toHaveCount(1)
+        ->and(($this->messages)($dm)[0]->sent_from_aiku)->toBeTrue()
+        ->and($announced())->toBe(['new', 'changed']);
+
+    \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->handle(['type' => 'message', 'subtype' => 'message_changed', 'channel' => $dm->slack_id, 'channel_type' => 'im', 'message' => [...$fromApp, 'text' => 'Lunch at half one?', 'edited' => ['ts' => sprintf('%d.000005', now()->timestamp)]]], $byWriter);
+    expect(($this->messages)($dm)[0]->text)->toBe('Lunch at half one?');
+    \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->handle([...$fromApp, 'ts' => sprintf('%d.000077', now()->timestamp), 'subtype' => 'bot_message', 'text' => 'an app speaking'], $byWriter);
+    \App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage::make()->handle([...$fromApp, 'ts' => sprintf('%d.000078', now()->timestamp), 'user' => "UNOBODY{$this->s}", 'text' => 'an unknown app user'], $byWriter);
+    expect(($this->messages)($dm))->toHaveCount(1);
+
+    Http::fake([
+        'slack.com/api/chat.update' => Http::response(['ok' => true, 'channel' => $dm->slack_id, 'ts' => $ts, 'text' => 'Lunch at two?', 'message' => ['text' => 'Lunch at two?', 'edited' => ['user' => "UWRITE{$this->s}", 'ts' => sprintf('%d.000009', now()->timestamp)]]]),
+        'slack.com/api/chat.delete' => Http::response(['ok' => true, 'channel' => $dm->slack_id, 'ts' => $ts]),
+    ]);
+    actingAs($this->writer)->patchJson(route('grp.chat.staff.slack.messages.update', ['slackChannel' => $dm->id]), ['ts' => $ts, 'text' => 'Lunch at two?', 'format' => 'readable'])->assertOk();
+    $edited = SlackMessage::where('slack_channel_id', $dm->id)->where('ts', $ts)->sole();
+    expect($edited->text)->toBe('Lunch at two?')
+        ->and($edited->versions()->count())->toBe(2);
+
+    Http::fake(['slack.com/api/reactions.add' => Http::response(['ok' => true])]);
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.reactions.toggle', ['slackChannel' => $dm->id]), ['ts' => $ts, 'name' => 'eyes', 'add' => true])->assertOk()
+        ->assertJsonPath('message.my_reactions', ['eyes']);
+    $reacted = Http::recorded(fn (Request $request) => str_contains($request->url(), 'reactions.add'))->last()[0];
+    expect($reacted->header('Authorization')[0])->toBe('Bearer '.$this->token)
+        ->and($reacted['channel'])->toBe($dm->slack_id)
+        ->and($edited->reactions()->pluck('name', 'slack_user_id')->all())->toBe(["UWRITE{$this->s}" => 'eyes'])
+        ->and(Arr::last($announced()))->toBe('changed');
+
+    Config::set('services.slack.signing_secret', 'shh');
+    $webhook = function (array $event, string $deliveredBy) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event, 'authorizations' => [['team_id' => 'T1', 'user_id' => $deliveredBy, 'is_bot' => false]]]);
+        $timestamp = (string) time();
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], ['HTTP_X_SLACK_REQUEST_TIMESTAMP' => $timestamp, 'HTTP_X_SLACK_SIGNATURE' => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'), 'CONTENT_TYPE' => 'application/json'], $body);
+    };
+    $readerReacts = ['type' => 'reaction_added', 'user' => "UREAD{$this->s}", 'reaction' => 'tada', 'item' => ['type' => 'message', 'channel' => $dm->slack_id, 'ts' => $ts], 'event_ts' => sprintf('%d.000010', now()->timestamp)];
+    $webhook($readerReacts, "UBOB{$this->s}")->assertOk();
+    expect($edited->reactions()->where('name', 'tada')->exists())->toBeFalse();
+    $webhook($readerReacts, "UWRITE{$this->s}")->assertOk();
+    expect($edited->reactions()->where('name', 'tada')->exists())->toBeTrue();
+
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.pin.toggle', ['slackChannel' => $dm->id]), ['ts' => $ts, 'pinned' => true])->assertForbidden();
+
+    actingAs($this->writer)->deleteJson(route('grp.chat.staff.slack.messages.delete', ['slackChannel' => $dm->id]), ['ts' => $ts])->assertOk();
+    expect(SlackMessage::withTrashed()->where('slack_channel_id', $dm->id)->where('ts', $ts)->sole()->trashed())->toBeTrue()
+        ->and(array_slice($announced(), -2))->toBe(['changed', 'deleted']);
+
+    \App\Actions\Chat\Staff\Slack\PurgeSlackDirectWords::run("UWRITE{$this->s}");
+    $purged = SlackMessage::withTrashed()->where('slack_channel_id', $dm->id)->where('ts', $ts)->sole();
+    expect($purged->text)->toBeNull()
+        ->and($purged->data)->toBeNull()
+        ->and($purged->versions()->count())->toBe(0);
+
+    $sentBefore = ($this->posts)()->count();
+    ($this->send)($dm, 'Not my chat', as: $this->bob)->assertForbidden();
+    actingAs($this->bob)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertForbidden();
+    expect(($this->posts)()->count())->toBe($sentBefore)
+        ->and(($this->messages)($dm))->toHaveCount(1);
+});
+
+test('without the private opt-in, or with a Slack connection that needs renewing, a Slack DM says why under the box and nothing reaches Slack, INI-593', function () {
+    Config::set('services.slack.team_id', 'T1');
+    $dm = slackDirectForSend($this, 'mpim', ["UWRITE{$this->s}", "UREAD{$this->s}", "UBOB{$this->s}"]);
+
+    actingAs($this->writer)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.write.allowed', true)->where('slack_channel.write.reason', 'Turn on private conversations in your Slack settings to reply here')->where('slack_channel.write.direct', true));
+    ($this->send)($dm, 'Hello all')->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Turn on private conversations in your Slack settings to reply here');
+
+    optInPrivately($this)->forceFill(['needs_reconnect' => true])->save();
+    actingAs($this->writer)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.write.reason', 'Reconnect your Slack account to reply here'));
+    ($this->send)($dm, 'Hello all')->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Reconnect your Slack account to reply here');
+    SlackConnection::where('user_id', $this->writer->id)->sole()->forceFill(['needs_reconnect' => false, 'revoked_at' => now()])->save();
+    ($this->send)($dm, 'Hello all')->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Reconnect your Slack account to reply here');
+
+    expect(($this->posts)())->toHaveCount(0)
+        ->and(($this->messages)($dm))->toHaveCount(0);
+
+    SlackConnection::where('user_id', $this->writer->id)->sole()->forceFill(['revoked_at' => null])->save();
+    $closing = slackDirectForSend($this, 'im', ["UWRITE{$this->s}", "UREAD{$this->s}"]);
+    ($this->slack)(['ok' => false, 'error' => 'is_archived']);
+    ($this->send)($closing, 'Are you there?')->assertUnprocessable()->assertJsonPath('errors.slack.0', 'This conversation is closed in Slack, the other person is no longer there.');
+    expect($closing->refresh()->is_archived)->toBeTrue();
+    actingAs($this->writer)->get(route('grp.chat.staff.direct.slack.show', $closing))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.write.reason', 'This conversation is closed in Slack, the other person is no longer there.')->where('slack_channel.write.connect_url', null));
+});
+
+test('starting a chat in Verba opens the Slack DM or group DM with those people, or opens one in Slack, whenever the starter is opted in, even over an older Verba DM, which then points to it; a call, a named chat, someone without a Slack person, a starter not opted in or Slack failing get a Verba chat, INI-593', function () {
+    Config::set('services.slack.team_id', 'T1');
+    $dm      = slackDirectForSend($this, 'im', ["UWRITE{$this->s}", "UREAD{$this->s}"]);
+    $start   = fn (array $with, bool $preferSlack = true, array $extra = []) => actingAs($this->writer)->postJson(route('grp.chat.staff.conversations.store'), ['user_ids' => array_map(fn (User $user) => $user->id, $with), 'prefer_slack' => $preferSlack, ...$extra]);
+    $verbaDm = fn (User $with) => \App\Models\Chat\StaffConversation::where('dm_key', \App\Models\Chat\StaffConversation::dmKey([$this->writer->id, $with->id]))->first();
+    $opened   = null;
+    $openFails = false;
+    Http::fake(['slack.com/api/conversations.open' => function (Request $request) use (&$opened, &$openFails) {
+        $opened = $request['users'];
+        if ($openFails) {
+            return Http::response(['ok' => false, 'error' => 'ratelimited']);
+        }
+
+        return Http::response(str_contains($request['users'], ',') ? ['ok' => true, 'channel' => ['id' => "GMP{$this->s}"]] : ['ok' => true, 'channel' => ['id' => "DBOB{$this->s}"]]);
+    }]);
+    optInPrivately($this);
+
+    $start([$this->reader], preferSlack: false)->assertSuccessful()->assertJsonMissingPath('slack_direct');
+    $older = $verbaDm($this->reader);
+    expect($older)->not->toBeNull();
+
+    $start([$this->reader])->assertOk()->assertJsonPath('slack_direct.id', $dm->id)->assertJsonPath('slack_direct.url', route('grp.chat.staff.direct.slack.show', $dm->id));
+    expect($opened)->toBeNull();
+    $pointer = function (User $viewer) use ($older): ?string {
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setUserResolver(fn () => $viewer);
+
+        return (new \App\Http\Resources\Chat\StaffConversationResource($older->fresh('participants')))->toArray($request)['slack_direct_url'];
+    };
+    expect($pointer($this->writer))->toBe(route('grp.chat.staff.direct.slack.show', $dm->id))
+        ->and($pointer($this->reader))->toBe(route('grp.chat.staff.direct.slack.show', $dm->id))
+        ->and($pointer($this->bob))->toBeNull();
+    $start([$this->reader], preferSlack: false)->assertSuccessful()->assertJsonMissingPath('slack_direct');
+    $start([$this->reader], extra: ['name' => 'Planning'])->assertSuccessful()->assertJsonMissingPath('slack_direct');
+
+    $response = $start([$this->bob])->assertOk();
+    $bobDm    = SlackChannel::where('slack_id', "DBOB{$this->s}")->sole();
+    expect($opened)->toBe("UBOB{$this->s}")
+        ->and($response->json('slack_direct.id'))->toBe($bobDm->id)
+        ->and($bobDm->direct_type)->toBe('im')
+        ->and($bobDm->members()->pluck('slack_user_id')->sort()->values()->all())->toBe(collect(["UBOB{$this->s}", "UWRITE{$this->s}"])->sort()->values()->all());
+
+    $group = $start([$this->reader, $this->bob])->assertOk();
+    $mpim  = SlackChannel::where('slack_id', "GMP{$this->s}")->sole();
+    expect(collect(explode(',', $opened))->sort()->values()->all())->toBe(collect(["UREAD{$this->s}", "UBOB{$this->s}"])->sort()->values()->all())
+        ->and($group->json('slack_direct.id'))->toBe($mpim->id)
+        ->and($mpim->direct_type)->toBe('mpim')
+        ->and($mpim->members()->count())->toBe(3);
+
+    $start([$this->user])->assertSuccessful()->assertJsonMissingPath('slack_direct');
+    $openFails = true;
+    $start([$this->reader, $this->bob])->assertSuccessful()->assertJsonMissingPath('slack_direct');
+
+    SlackConnection::where('user_id', $this->writer->id)->sole()->endPrivateConsent('withdrawn');
+    $start([$this->reader])->assertSuccessful()->assertJsonMissingPath('slack_direct');
 });

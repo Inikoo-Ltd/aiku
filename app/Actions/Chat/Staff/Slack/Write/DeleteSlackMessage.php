@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Events\SlackDirectMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,6 +23,11 @@ class DeleteSlackMessage
 {
     use AsAction;
     use WithSlackMessageWrite;
+
+    protected function writesDirect(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
@@ -42,12 +48,17 @@ class DeleteSlackMessage
 
         $this->callSlack($client, 'chat.delete', ['channel' => $slackChannel->slack_id, 'ts' => $message->ts], ['message_not_found']);
 
-        StoreSlackMessage::make()->handle([
-            'channel'      => $slackChannel->slack_id,
-            'channel_type' => 'channel',
-            'subtype'      => 'message_deleted',
-            'deleted_ts'   => $message->ts,
-        ]);
+        if ($slackChannel->direct_type) {
+            $message->delete();
+            SlackDirectMessageChanged::announce($slackChannel, $message, 'deleted');
+        } else {
+            StoreSlackMessage::make()->handle([
+                'channel'      => $slackChannel->slack_id,
+                'channel_type' => 'channel',
+                'subtype'      => 'message_deleted',
+                'deleted_ts'   => $message->ts,
+            ]);
+        }
 
         return $this->row($slackChannel, $message->ts, $user);
     }

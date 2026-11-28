@@ -306,7 +306,7 @@ test('Slack DMs: an event delivered through A\'s token keeps A\'s words and stor
         ->and(\App\Actions\Chat\Staff\Slack\StoreSlackMessage::make()->handle(($this->dm)($b, 8)))->toBeNull();
 
     actingAs($this->viewer)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.is_direct', true)->where('slack_channel.write', null)->where('slack_channel.name', 'Bee Person'));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.is_direct', true)->where('slack_channel.write.direct', true)->where('slack_channel.write.stand_in', false)->where('slack_channel.name', 'Bee Person'));
     $stream = slackDirectStream($dm, $this->viewer);
     expect(collect($stream)->pluck('is_gap', 'ts')->all())->toBe([($this->ts)(6) => true, ($this->ts)(2) => false, ($this->ts)(1) => true])
         ->and(collect($stream)->firstWhere('ts', ($this->ts)(1))['files'])->toBe([]);

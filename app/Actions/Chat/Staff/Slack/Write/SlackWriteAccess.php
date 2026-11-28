@@ -97,4 +97,27 @@ class SlackWriteAccess
             ? __('Reconnect your Slack account to write here')
             : __('Connect your Slack account to write here');
     }
+
+    /**
+     * Why this person cannot write in a Slack DM or group DM from Verba (INI-593), or null when they can: only with their own
+     * token and the private opt-in, never through the stand-in bot.
+     */
+    public static function directReasonUnavailable(User $user): ?string
+    {
+        if (!self::allows($user)) {
+            return __('Writing to Slack from here is not available to you');
+        }
+        if (!app()->environment(self::WRITE_ENVIRONMENTS)) {
+            return __('Writing to Slack is switched off on this machine');
+        }
+        $connection = SlackConnection::main()->where('user_id', $user->id)->first();
+        if ($connection && ($connection->needsReconnection() || ($connection->private_consented_at !== null && !$connection->isLive()))) {
+            return __('Reconnect your Slack account to reply here');
+        }
+        if (!$connection?->hasPrivateConsent()) {
+            return __('Turn on private conversations in your Slack settings to reply here');
+        }
+
+        return null;
+    }
 }

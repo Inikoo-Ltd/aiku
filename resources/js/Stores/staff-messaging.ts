@@ -6,7 +6,7 @@
 
 import { defineStore } from "pinia"
 import axios from "axios"
-import { usePage } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import { alertOnce, alertWayIsOn, chosenAlertSound, isOpenInFront } from "@/Composables/useNotificationSound"
@@ -102,6 +102,7 @@ export interface StaffConversation {
     last_message_user_id?: number | null
     wallpaper?: { pattern: string | null; colour: string | null } | null
     wallpaper_is_set?: boolean
+    slack_direct_url?: string | null
 }
 
 export interface StaffConversationTask {
@@ -252,8 +253,12 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             }, CACHE_WRITE_DELAY_MS))
         },
 
-        async openWithUser(userId: number, { openWindow = true }: { openWindow?: boolean } = {}): Promise<StaffConversation> {
-            const { data } = await axios.post(route("grp.chat.staff.conversations.store"), { user_ids: [userId] })
+        async openWithUser(userId: number, { openWindow = true, forCall = false }: { openWindow?: boolean; forCall?: boolean } = {}): Promise<StaffConversation | null> {
+            const { data } = await axios.post(route("grp.chat.staff.conversations.store"), { user_ids: [userId], prefer_slack: !forCall })
+            if (data.slack_direct) {
+                router.visit(data.slack_direct.url)
+                return null
+            }
             const conversation: StaffConversation = data.data
             const existingIndex = this.conversations.findIndex((c) => c.ulid === conversation.ulid)
             if (existingIndex === -1) {

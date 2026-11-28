@@ -55,8 +55,8 @@ const act = async (person: StaffQuickPerson, startCall: boolean) => {
     errorMessage.value = ""
     busyId.value = person.id
     try {
-        const conversation = await messaging.openWithUser(person.id, { openWindow: !startCall })
-        if (startCall) {
+        const conversation = await messaging.openWithUser(person.id, { openWindow: !startCall, forCall: startCall })
+        if (startCall && conversation) {
             await calls.start(conversation.ulid, "voice")
             if (calls.error?.conversationUlid === conversation.ulid) {
                 errorMessage.value = calls.error.text

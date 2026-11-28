@@ -12,6 +12,7 @@ export interface SlackLiveEvent {
     channel_id: number
     kind: "new" | "changed" | "deleted" | "reaction" | "pin"
     ts: string
+    user_id?: number | null
     at: number
     message: SlackStreamMessage | null
     parent: SlackStreamMessage | null

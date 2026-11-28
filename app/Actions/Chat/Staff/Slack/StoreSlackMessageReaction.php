@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Slack;
 
 use App\Events\SlackChannelMessageChanged;
+use App\Events\SlackDirectMessageChanged;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackMessageReaction;
 use Illuminate\Console\Command;
@@ -35,6 +36,25 @@ class StoreSlackMessageReaction
      */
     public function handle(array $event): void
     {
+        $this->apply($event, direct: false);
+    }
+
+    /**
+     * A reaction in a Slack DM or group DM (INI-593): only on a message Verba holds of a DM still kept, told to its members
+     * by ids only. Reactions carry no words, so they are kept whoever made them.
+     *
+     * @param  array<string, mixed>  $event
+     */
+    public function inDirect(array $event): void
+    {
+        $this->apply($event, direct: true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $event
+     */
+    private function apply(array $event, bool $direct): void
+    {
         $slackUserId = Arr::get($event, 'user');
         $name        = Arr::get($event, 'reaction');
         if (Arr::get($event, 'item.type') !== 'message' || !$slackUserId || !$name) {
@@ -43,7 +63,7 @@ class StoreSlackMessageReaction
 
         $message = SlackMessage::query()
             ->where('ts', (string) Arr::get($event, 'item.ts'))
-            ->whereHas('channel', fn ($channel) => $channel->kept()->where('slack_id', Arr::get($event, 'item.channel')))
+            ->whereHas('channel', fn ($channel) => ($direct ? $channel->keptDirect() : $channel->kept())->where('slack_id', Arr::get($event, 'item.channel')))
             ->first();
         if (!$message) {
             return;
@@ -52,14 +72,26 @@ class StoreSlackMessageReaction
         $key = ['slack_message_id' => $message->id, 'slack_user_id' => $slackUserId, 'name' => $name];
         if (Arr::get($event, 'type') === 'reaction_removed') {
             SlackMessageReaction::where($key)->delete();
-            $message->update(['data' => ['reactions' => $this->withoutReaction((array) Arr::get($message->data, 'reactions', []), $name, $slackUserId)] + (array) $message->data]);
-            rescue(fn () => SlackChannelMessageChanged::dispatch($message->channel, $message, 'reaction'));
+            if ($message->data !== null) {
+                $message->update(['data' => ['reactions' => $this->withoutReaction((array) Arr::get($message->data, 'reactions', []), $name, $slackUserId)] + (array) $message->data]);
+            }
+            $this->announce($message, $direct);
 
             return;
         }
 
         $eventTs = Arr::get($event, 'event_ts');
         SlackMessageReaction::firstOrCreate($key, ['reacted_at' => $eventTs ? Carbon::createFromTimestamp((float) $eventTs) : now()]);
+        $this->announce($message, $direct);
+    }
+
+    private function announce(SlackMessage $message, bool $direct): void
+    {
+        if ($direct) {
+            SlackDirectMessageChanged::announce($message->channel, $message, 'changed');
+
+            return;
+        }
         rescue(fn () => SlackChannelMessageChanged::dispatch($message->channel, $message, 'reaction'));
     }
 

@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\Staff\Slack;
 
+use App\Actions\Chat\Staff\Slack\Write\SendSlackFiles;
+use App\Events\SlackDirectMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackChannelMember;
 use App\Models\Chat\SlackConnection;
@@ -18,6 +20,7 @@ use App\Notifications\SlackDirectInviteNotification;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Ramsey\Uuid\Uuid;
@@ -55,6 +58,9 @@ class StoreSlackDirectMessage
             $channel = SlackChannel::keptDirect()->where('slack_id', $slackChannelId)->first();
             $message = $channel?->messages()->where('ts', (string) Arr::get($event, 'deleted_ts'))->first();
             $message?->delete();
+            if ($message) {
+                SlackDirectMessageChanged::announce($channel, $message, 'deleted');
+            }
 
             return $message;
         }
@@ -75,8 +81,14 @@ class StoreSlackDirectMessage
         $this->addMembers($channel, [$bringer->slack_user_id, $author]);
 
         $stored = $this->store($channel, $message, $bringer->user);
+        if ($stored && !$stored->sent_from_aiku && $stored->data !== null && self::carriesFileSentFromAiku([...$message, 'channel' => $slackChannelId])) {
+            $stored->forceFill(['sent_from_aiku' => true])->saveQuietly();
+        }
         if ($stored?->data !== null) {
             CopySlackMessageFile::dispatchFor($stored);
+        }
+        if ($stored) {
+            SlackDirectMessageChanged::announce($channel, $stored, $stored->wasRecentlyCreated ? 'new' : 'changed');
         }
 
         return $stored;
@@ -147,11 +159,37 @@ class StoreSlackDirectMessage
     /**
      * @param  array<string, mixed>  $message
      */
+    /**
+     * A person's own message. One posted with the person's own token through an app (Verba included) carries the app's bot_id
+     * beside the person: it is theirs when the author is a known Slack person, not a bot, and it is not a bot_message.
+     *
+     * @param  array<string, mixed>  $message
+     */
     public static function isFromPerson(array $message): bool
     {
         $author = Arr::get($message, 'user');
+        if (!is_string($author)) {
+            return false;
+        }
+        $isBot = SlackUser::where('slack_id', $author)->value('is_bot');
+        if ($isBot) {
+            return false;
+        }
 
-        return is_string($author) && !Arr::get($message, 'bot_id') && !SlackUser::where('slack_id', $author)->where('is_bot', true)->exists();
+        return !Arr::get($message, 'bot_id') || ($isBot === false && Arr::get($message, 'subtype') !== 'bot_message');
+    }
+
+    /**
+     * Files sent from Verba leave a short-lived marker per Slack file id (SendSlackFiles): their message only arrives with Slack's event.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    private static function carriesFileSentFromAiku(array $message): bool
+    {
+        $sender = SendSlackFiles::sentMarkerValue((string) Arr::get($message, 'user'), (string) Arr::get($message, 'channel'));
+
+        return collect((array) Arr::get($message, 'files', []))
+            ->contains(fn ($file) => is_array($file) && is_string($id = Arr::get($file, 'id')) && Cache::get(SendSlackFiles::sentMarkerKey($id)) === $sender);
     }
 
     public static function hasOptedIn(string $slackUserId): bool

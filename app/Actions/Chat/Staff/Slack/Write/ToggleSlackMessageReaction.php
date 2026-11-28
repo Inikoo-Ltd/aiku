@@ -26,6 +26,11 @@ class ToggleSlackMessageReaction
 
     public const string NAME_PATTERN = "/^[a-z0-9_+'-]+(::skin-tone-[2-6])?$/";
 
+    protected function writesDirect(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
@@ -52,13 +57,18 @@ class ToggleSlackMessageReaction
             [$add ? 'already_reacted' : 'no_reaction']
         );
 
-        StoreSlackMessageReaction::make()->handle([
+        $event = [
             'type'     => $add ? 'reaction_added' : 'reaction_removed',
             'user'     => $client->slackUserId(),
             'reaction' => $name,
             'item'     => ['type' => 'message', 'channel' => $slackChannel->slack_id, 'ts' => $message->ts],
             'event_ts' => sprintf('%.6f', microtime(true)),
-        ]);
+        ];
+        if ($slackChannel->direct_type) {
+            StoreSlackMessageReaction::make()->inDirect($event);
+        } else {
+            StoreSlackMessageReaction::make()->handle($event);
+        }
 
         return $this->row($slackChannel, $message->ts, $user);
     }

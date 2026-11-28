@@ -9,7 +9,9 @@
 namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
+use App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Events\SlackDirectMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -26,6 +28,11 @@ class EditSlackMessage
     use WithSlackMessageWrite;
 
     public const int MAX_LENGTH = 4000;
+
+    protected function writesDirect(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
@@ -63,19 +70,25 @@ class EditSlackMessage
         $askedAt  = sprintf('%.6f', microtime(true));
         $response = $this->callSlack($client, 'chat.update', ['channel' => $slackChannel->slack_id, 'ts' => $message->ts, 'text' => $slackText]);
 
-        StoreSlackMessage::make()->handle([
-            'channel'      => $slackChannel->slack_id,
-            'channel_type' => 'channel',
-            'subtype'      => 'message_changed',
-            'message'      => array_merge(
-                Arr::except((array) $message->data, ['blocks', 'edited']),
-                Arr::except((array) Arr::get($response, 'message', []), ['ts', 'thread_ts', 'user']),
-                [
-                    'text'   => (string) (Arr::get($response, 'message.text') ?? Arr::get($response, 'text') ?? $slackText),
-                    'edited' => ['user' => $client->slackUserId(), 'ts' => (string) Arr::get($response, 'message.edited.ts', $askedAt)],
-                ]
-            ),
-        ]);
+        $edited = array_merge(
+            Arr::except((array) $message->data, ['blocks', 'edited']),
+            Arr::except((array) Arr::get($response, 'message', []), ['ts', 'thread_ts', 'user']),
+            [
+                'text'   => (string) (Arr::get($response, 'message.text') ?? Arr::get($response, 'text') ?? $slackText),
+                'edited' => ['user' => $client->slackUserId(), 'ts' => (string) Arr::get($response, 'message.edited.ts', $askedAt)],
+            ]
+        );
+        if ($slackChannel->direct_type) {
+            StoreSlackDirectMessage::make()->store($slackChannel, [...$edited, 'ts' => $message->ts, 'thread_ts' => $message->thread_ts, 'user' => $message->slack_user_id]);
+            SlackDirectMessageChanged::announce($slackChannel, $message, 'changed');
+        } else {
+            StoreSlackMessage::make()->handle([
+                'channel'      => $slackChannel->slack_id,
+                'channel_type' => 'channel',
+                'subtype'      => 'message_changed',
+                'message'      => $edited,
+            ]);
+        }
 
         return $this->row($slackChannel, $message->ts, $user);
     }

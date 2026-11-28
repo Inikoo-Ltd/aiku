@@ -315,7 +315,7 @@ useSlackLive(() => props.liveChannel, (event: SlackLiveEvent) => {
     }
 })
 
-const write = computed(() => (props.channel.is_archived ? null : props.channel.write ?? null))
+const write = computed(() => (props.channel.is_archived && !props.channel.is_direct ? null : props.channel.write ?? null))
 const canWriteNow = computed(() => !!write.value?.allowed && !write.value.reason)
 
 const onSent = (sent: SlackSentMessage) => {
@@ -384,7 +384,7 @@ const updateListing = (isListed: boolean) => {
                     <ChatWallpaperButton :slack-channel-id="channel.id" :wallpaper="channel.wallpaper" :is-set="!!channel.wallpaper_is_set" @saved="onWallpaperSaved" />
                     <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[var(--vx-head-muted,#616061)] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
-                <div v-if="bookmarks.length || write?.allowed" class="flex items-center gap-x-1.5 overflow-x-auto px-3 pb-2">
+                <div v-if="bookmarks.length || (write?.allowed && !write.direct)" class="flex items-center gap-x-1.5 overflow-x-auto px-3 pb-2">
                     <span v-for="bookmark in bookmarks" :key="bookmark.id" class="group/bookmark inline-flex shrink-0 items-center gap-x-0.5">
                         <a
                             v-if="bookmark.url"
@@ -406,7 +406,7 @@ const updateListing = (isListed: boolean) => {
                             <span class="truncate">{{ bookmark.title }}</span>
                         </span>
                         <Button
-                            v-if="write?.allowed && bookmark.url"
+                            v-if="write?.allowed && !write.direct && bookmark.url"
                             type="tertiary"
                             size="xs"
                             class="opacity-0 focus:opacity-100 group-hover/bookmark:opacity-100"
@@ -414,7 +414,7 @@ const updateListing = (isListed: boolean) => {
                             :tooltip="ctrans('Edit bookmark')"
                             @click="openBookmark(bookmark)" />
                     </span>
-                    <Button v-if="write?.allowed" type="tertiary" size="xs" class="shrink-0 whitespace-nowrap" icon="fal fa-plus" :label="ctrans('Add a bookmark')" @click="openBookmark(null)" />
+                    <Button v-if="write?.allowed && !write.direct" type="tertiary" size="xs" class="shrink-0 whitespace-nowrap" icon="fal fa-plus" :label="ctrans('Add a bookmark')" @click="openBookmark(null)" />
                 </div>
                 <div class="flex items-center gap-x-1 px-3" role="tablist" :aria-label="ctrans('Channel views')">
                     <button
@@ -493,8 +493,8 @@ const updateListing = (isListed: boolean) => {
                 <ToggleSwitch :model-value="!!channel.is_listed" input-id="slack-channel-listed" :disabled="isSavingListing" @update:model-value="updateListing" />
                 <label for="slack-channel-listed" class="cursor-pointer">{{ channel.is_listed ? ctrans("Shown in Verbations: everyone can see this channel's name and ask to join. Its messages stay for members only.") : ctrans("Show this channel's name in Verbations, so others can ask to join. Its messages stay for members only.") }}</label>
             </div>
-            <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ channel.is_direct ? ctrans("Slack direct message, read only. Only the people in it can see it. Reply in Slack for now.") : ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
-            <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
+            <p v-if="channel.is_private && !channel.is_direct && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
+            <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="channel.is_direct ? ctrans('Message :name', { name: channel.name ?? '' }) : ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
 
         <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :live-channel="liveChannel" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" :write="write" @close="openThreadTs = null" @sent="onThreadSent" />

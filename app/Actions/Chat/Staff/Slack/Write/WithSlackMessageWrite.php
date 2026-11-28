@@ -26,7 +26,29 @@ trait WithSlackMessageWrite
     {
         $slackChannel = $request->route('slackChannel');
 
-        return $slackChannel instanceof SlackChannel && self::mayWrite($request->user(), $slackChannel);
+        return $slackChannel instanceof SlackChannel && $this->mayWriteHere($request->user(), $slackChannel);
+    }
+
+    /**
+     * Only sending, editing and deleting open Slack DMs and group DMs (INI-593); every other write stays on public channels.
+     */
+    protected function writesDirect(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Members only, as directVisibleTo, no role bypass. The private opt-in and a live token are asked by clientFor, so
+     * someone without them gets the reason under the box rather than a refusal.
+     */
+    public static function mayWriteDirect(User $user, SlackChannel $slackChannel): bool
+    {
+        return $slackChannel->direct_type !== null && $slackChannel->slack_team_id === null && !$slackChannel->is_archived && SlackWriteAccess::allows($user) && $slackChannel->isDirectVisibleTo($user);
+    }
+
+    protected function mayWriteHere(User $user, SlackChannel $slackChannel): bool
+    {
+        return $slackChannel->direct_type ? $this->writesDirect() && self::mayWriteDirect($user, $slackChannel) : self::mayWrite($user, $slackChannel);
     }
 
     public static function mayWrite(User $user, SlackChannel $slackChannel): bool
@@ -39,7 +61,7 @@ trait WithSlackMessageWrite
      */
     protected function ensureMayWrite(User $user, SlackChannel $slackChannel): void
     {
-        if (!self::mayWrite($user, $slackChannel)) {
+        if (!$this->mayWriteHere($user, $slackChannel)) {
             $this->refuse(__('Messages cannot be changed in this channel'));
         }
     }
@@ -55,6 +77,14 @@ trait WithSlackMessageWrite
      */
     protected function clientFor(User $user, bool $standInAllowed = false, ?SlackChannel $channel = null): SlackWriteClient
     {
+        if ($channel?->direct_type) {
+            $client = SlackWriteAccess::directReasonUnavailable($user) === null ? SlackWriteClient::for($user) : null;
+            if (!$client) {
+                $this->refuse(SlackWriteAccess::directReasonUnavailable($user) ?? __('Reconnect your Slack account to reply here'));
+            }
+
+            return $client;
+        }
         $workspace = $channel ? SlackWorkspace::forChannel($channel) : SlackWorkspace::main();
         $client    = $workspace ? (SlackWriteClient::for($user, $workspace) ?? ($standInAllowed ? SlackWriteClient::standInFor($user, $workspace) : null)) : null;
         if (!$client) {

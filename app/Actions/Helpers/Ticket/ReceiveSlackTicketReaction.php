@@ -132,7 +132,14 @@ class ReceiveSlackTicketReaction
             return response()->json(['ok' => true]);
         }
         if (in_array(Arr::get($event, 'type'), ['reaction_added', 'reaction_removed'], true)) {
-            StoreSlackMessageReaction::dispatch($event);
+            if (SlackChannel::keptDirect()->where('slack_id', Arr::get($event, 'item.channel'))->exists()) {
+                $deliveredBy = $request->input('authorizations.0.user_id');
+                if ($request->input('authorizations.0.is_bot') === false && is_string($deliveredBy) && StoreSlackDirectMessage::hasOptedIn($deliveredBy)) {
+                    rescue(fn () => StoreSlackMessageReaction::make()->inDirect($event), report: false);
+                }
+            } else {
+                StoreSlackMessageReaction::dispatch($event);
+            }
         }
         if (
             Arr::get($event, 'type') !== 'reaction_added'

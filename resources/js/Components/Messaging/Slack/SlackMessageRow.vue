@@ -67,7 +67,7 @@ const time = (iso: string) => useFormatTime(iso, { formatTime: "HH:mm" })
 const reactionTooltip = (reaction: SlackStreamMessage["reactions"][number]) =>
     reaction.people.length ? reaction.people.join(", ") : ctrans(":count people", { count: String(reaction.count) })
 
-type SlackWrite = { allowed: boolean; reason: string | null; stand_in?: boolean; connect_url: string | null; people?: DeskPerson[]; channels?: DeskPerson[] }
+type SlackWrite = { allowed: boolean; reason: string | null; stand_in?: boolean; direct?: boolean; connect_url: string | null; people?: DeskPerson[]; channels?: DeskPerson[] }
 type Reaction = SlackStreamMessage["reactions"][number]
 
 const page = usePage()
@@ -82,6 +82,8 @@ const shown = computed(() => override.value ?? props.message)
 const isGone = computed(() => !!override.value?.is_deleted && !override.value.reply_count)
 
 const canAct = computed(() => !!write.value?.allowed && channelId.value !== null && !shown.value.is_deleted && !shown.value.is_system)
+const canReact = canAct
+const canPin = computed(() => canAct.value && !write.value?.direct)
 const isOwn = computed(() => canAct.value && !shown.value.author.is_bot && shown.value.author.user_id !== null && shown.value.author.user_id === myId.value)
 
 const isMine = (name: string) => shown.value.my_reactions?.includes(name)
@@ -133,7 +135,7 @@ const react = async (key: string, body: { name: string } | { emoji: string }, ad
 }
 
 const onChip = (reaction: Reaction) => {
-    if (canAct.value) react(reaction.name, { name: reaction.name }, !isMine(reaction.name))
+    if (canReact.value) react(reaction.name, { name: reaction.name }, !isMine(reaction.name))
 }
 
 const picker = ref()
@@ -183,7 +185,7 @@ const togglePin = async () => {
 }
 const toolbarMenu = computed<DeskToolbarMenuItem[]>(() => [
     { label: ctrans("Copy link"), icon: "fal fa-link", command: copyLink },
-    ...(canAct.value ? [{ label: shown.value.is_pinned ? ctrans("Unpin from channel") : ctrans("Pin to channel"), icon: "fal fa-thumbtack", command: togglePin }] : []),
+    ...(canPin.value ? [{ label: shown.value.is_pinned ? ctrans("Unpin from channel") : ctrans("Pin to channel"), icon: "fal fa-thumbtack", command: togglePin }] : []),
     ...(isOwn.value
         ? [
             { label: ctrans("Edit message"), icon: "fal fa-pencil", command: startEdit },
@@ -360,16 +362,16 @@ const confirmDelete = async () => {
 
                 <div v-if="shown.reactions.length" class="mt-1 flex flex-wrap gap-1">
                     <component
-                        :is="canAct ? 'button' : 'span'"
+                        :is="canReact ? 'button' : 'span'"
                         v-for="reaction in shown.reactions"
                         :key="reaction.name"
                         v-tooltip="reactionTooltip(reaction)"
-                        :type="canAct ? 'button' : undefined"
-                        :aria-pressed="canAct ? isMine(reaction.name) : undefined"
+                        :type="canReact ? 'button' : undefined"
+                        :aria-pressed="canReact ? isMine(reaction.name) : undefined"
                         class="inline-flex h-6 items-center gap-x-1 rounded-xl border px-1.5 text-xs"
                         :class="[
                             isMine(reaction.name) ? 'border-[#1d9bd1] bg-[#e8f5fa] text-[#1264a3]' : 'border-transparent bg-[#1d1c1d0f] text-[#1d1c1d]',
-                            canAct ? 'cursor-pointer hover:border-[#1d1c1d80] hover:bg-white' : 'cursor-default',
+                            canReact ? 'cursor-pointer hover:border-[#1d1c1d80] hover:bg-white' : 'cursor-default',
                         ]"
                         @click="onChip(reaction)">
                         <span v-if="reaction.unicode">{{ reaction.unicode }}</span>
@@ -378,7 +380,7 @@ const confirmDelete = async () => {
                         <span class="tabular-nums">{{ reaction.count }}</span>
                     </component>
                     <button
-                        v-if="canAct"
+                        v-if="canReact"
                         type="button"
                         class="inline-flex h-6 items-center rounded-xl border border-transparent bg-[#1d1c1d0f] px-1.5 text-xs text-[#616061] opacity-0 hover:border-[#1d1c1d80] hover:bg-white group-hover:opacity-100 focus:opacity-100"
                         :aria-label="ctrans('Add reaction')"
@@ -410,7 +412,7 @@ const confirmDelete = async () => {
 
         <div v-if="hasToolbar" class="absolute -top-4 right-4 z-10 invisible transition-[visibility] delay-0 group-hover:visible group-hover:delay-100 group-focus-within:visible">
             <DeskMessageToolbar
-                :can-react="canAct"
+                :can-react="canReact"
                 :mine="mineUnicode"
                 :reply-label="inThread ? null : ctrans('Reply in thread')"
                 :menu="toolbarMenu"
@@ -423,7 +425,7 @@ const confirmDelete = async () => {
         </button>
         <span v-if="copied" class="absolute -top-4 right-4 z-20 rounded bg-[#1d1c1d] px-2 py-1 text-xs text-white" role="status">{{ ctrans("Link copied") }}</span>
 
-        <Popover v-if="canAct" ref="picker">
+        <Popover v-if="canReact" ref="picker">
             <EmojiPicker @pick="onPick" />
         </Popover>
 
