@@ -170,22 +170,28 @@ const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
 						v-slot="{ isLoading } = { isLoading: false }">
 					<div class="flex items-center gap-3 min-w-0 cursor-pointer group"
 						:class="{ 'cursor-wait': isLoading }">
-							<div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
-								<LoadingIcon v-if="isLoading" class="text-lg text-gray-500" />
-								<Image v-else-if="layout?.user?.avatar_thumbnail" :src="layout.user.avatar_thumbnail"
-									imageCover class="w-full h-full object-cover" />
-								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" fixed-width />
+							<div class="relative shrink-0">
+								<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
+									<LoadingIcon v-if="isLoading" class="text-lg text-gray-500" />
+									<Image v-else-if="layout?.user?.avatar_thumbnail" :src="layout.user.avatar_thumbnail"
+										imageCover class="w-full h-full object-cover" />
+									<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" fixed-width />
+								</div>
+								<component :is="layout?.offer_data?.amnesty ? 'span' : GoldReward"
+									v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
+									class="absolute -top-1.5 -right-1.5">
+									<span class="flex items-center justify-center w-5 h-5 rounded-full bg-white ring-1 ring-gray-200 shadow-sm">
+										<FontAwesomeIcon :icon="faMedal" class="text-[11px]"
+											:class="layout?.offer_data?.amnesty ? 'text-[#E87928]' : 'text-yellow-500'"
+											fixed-width aria-hidden="true" />
+									</span>
+								</component>
 							</div>
 
 						<div class="leading-tight min-w-0">
 							<div class="flex items-center gap-2 text-sm font-medium">
 								<span class="truncate max-w-[9rem] xl:max-w-[14rem] group-hover:underline" :title="displayName">{{ displayName }}</span>
 
-								<!-- <img v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
-									:src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo"
-									class="w-auto h-6" /> -->
-								<FontAwesomeIcon v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
-									:icon="faMedal" class="text-[#E87928]" fixed-width aria-hidden="true" />
 							</div>
 
 							<template v-if="layout?.offer_data?.amnesty">
@@ -205,32 +211,18 @@ const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
 							</template>
 
 							<template v-else-if="layout?.offer_data?.type === 'gr'">
-								<span class="inline-flex items-center gap-1 text-yellow-500">
+								<span class="inline-flex items-center gap-1.5 text-yellow-500 whitespace-nowrap">
 									{{ layout?.offer_data?.label }}
-									<GoldReward>
-										<template #default>
-											<div class="flex items-center">
-												<FontAwesomeIcon icon="fas fa-medal" class="text-yellow-500" fixed-width
-													aria-hidden="true" />
-
-												<div
-													class="relative inline-block w-24 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
-													<div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
-														:class="{ xshimmer: true }" :style="{
-															width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
-														}" />
-
-													<div
-														class="absolute inset-0 flex items-center justify-center whitespace-nowrap font-medium text-black text-xxs">
-														{{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
-														/
-														{{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
-														days
-													</div>
-												</div>
-											</div>
-										</template>
-									</GoldReward>
+									<span class="relative w-16 h-1.5 overflow-hidden rounded-full bg-gray-200">
+										<span class="absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-in-out bg-green-500"
+											:style="{ width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%` }" />
+									</span>
+									<span class="text-xs tabular-nums text-gray-500">
+										{{ ctrans(':left / :total days', {
+											left: Number(layout?.offer_data?.meter?.[0]).toFixed(0),
+											total: Number(layout?.offer_data?.meter?.[1]).toFixed(0)
+										}) }}
+									</span>
 								</span>
 							</template>
 						</div>
