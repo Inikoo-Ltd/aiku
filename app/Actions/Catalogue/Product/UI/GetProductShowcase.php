@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductsShowcaseData;
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Traits\WithSearchInWebsiteAvailabilityChecklist;
@@ -23,6 +24,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Catalogue\Product;
+use App\Models\SysAdmin\Organisation;
 use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
@@ -225,6 +227,41 @@ class GetProductShowcase
                 'method'     => 'post',
             ] : null,
         ];
+    }
+
+    /**
+     * INI-485. What each warehouse the shop sells from could ship of the product as one whole line, after its margin.
+     * The product's available figure is the best of them, never their sum. Empty when the shop lists no other warehouse.
+     * Staff only: ShowProduct adds it, never handle(), which the customer's catalogue page also sends.
+     *
+     * @return array<int, array{name: string, is_home: bool, quantity: ?int, safety_margin: int}>
+     */
+    public function getStockByWarehouse(Product $product): array
+    {
+        $otherWarehouses = $product->shop->stockFromOtherWarehouses();
+        if (!$otherWarehouses) {
+            return [];
+        }
+
+        $resolver   = ResolveCrossDispatch::make();
+        $warehouses = [[
+            'name'          => $product->organisation->name,
+            'is_home'       => true,
+            'quantity'      => $product->homeAvailableQuantity(),
+            'safety_margin' => 0,
+        ]];
+        foreach ($otherWarehouses as $entry) {
+            if ($organisation = Organisation::find($entry['organisation_id'])) {
+                $warehouses[] = [
+                    'name'          => $organisation->name,
+                    'is_home'       => false,
+                    'quantity'      => $resolver->wholeProductsIn($product, $organisation, $entry['safety_margin']),
+                    'safety_margin' => $entry['safety_margin'],
+                ];
+            }
+        }
+
+        return $warehouses;
     }
 
     /**

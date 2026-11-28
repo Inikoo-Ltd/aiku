@@ -354,8 +354,8 @@ class ShowProduct extends OrgAction
 
         $componentData = [
             ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                fn () => GetProductShowcase::run($product)
-                : Inertia::optional(fn () => GetProductShowcase::run($product)),
+                fn () => GetProductShowcase::run($product) + ['stock_by_warehouse' => GetProductShowcase::make()->getStockByWarehouse($product)]
+                : Inertia::optional(fn () => GetProductShowcase::run($product) + ['stock_by_warehouse' => GetProductShowcase::make()->getStockByWarehouse($product)]),
 
             'salesData' => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                 fn () => GetProductTimeSeriesData::run($product)

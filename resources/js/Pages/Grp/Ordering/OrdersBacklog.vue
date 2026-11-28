@@ -53,12 +53,12 @@ const props = defineProps<{
     consolidated?: {} | null
     backlog_filters?: {
         prefix: string
-        current: { scope: 'domestic' | 'export' | null, channel: 'direct' | 'partner' | null, production_review?: 'reviewed' | 'unreviewed' | null, attention?: 'stuck' | 'waiting_stock' | 'waiting_cs' | null, payment?: 'paid' | 'unpaid' | null }
+        current: { scope: 'domestic' | 'export' | null, channel: 'direct' | 'partner' | null, production_review?: 'reviewed' | 'unreviewed' | null, attention?: 'stuck' | 'waiting_stock' | 'waiting_cs' | 'other_warehouse' | null, payment?: 'paid' | 'unpaid' | null }
         counts: {
             scope: { domestic: number, export: number }
             channel: { direct: number, partner: number }
             production_review?: { reviewed: number, unreviewed: number }
-            attention?: { stuck: number, waiting_stock: number, waiting_cs: number }
+            attention?: { stuck: number, waiting_stock: number, waiting_cs: number, other_warehouse?: number }
             payment?: { paid: number, unpaid: number }
         }
     }
@@ -110,6 +110,7 @@ const filterGroups = computed(() => [
             { value: 'stuck', label: ctrans('Stuck') },
             { value: 'waiting_stock', label: ctrans('Waiting for stock') },
             { value: 'waiting_cs', label: ctrans('With customer service') },
+            ...(props.backlog_filters?.counts.attention?.other_warehouse || props.backlog_filters?.current.attention === 'other_warehouse' ? [{ value: 'other_warehouse', label: ctrans('Needs another warehouse') }] : []),
         ],
     }] : []),
 ])
@@ -201,7 +202,7 @@ const hasDateFilter = computed(() => /between(%5B|\[)/.test(usePage().url))
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
                 :class="backlog_filters.current[group.key] === option.value
-                    ? 'border-[--app-accent] bg-[--app-accent] text-[--app-accent-text] shadow-sm'
+                    ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="setFilter(group.key, option.value)">
                 <span>{{ option.label }}</span>

@@ -2,12 +2,12 @@
 import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHourglassHalf, faBoxOpen, faHeadset, faCheckCircle } from "@fal"
+import { faHourglassHalf, faBoxOpen, faHeadset, faCheckCircle, faWarehouse } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 
-type Signal = "stuck" | "waiting_stock" | "waiting_cs"
+type Signal = "stuck" | "waiting_stock" | "waiting_cs" | "other_warehouse"
 
 type Stage = {
     tab: string
@@ -15,6 +15,7 @@ type Stage = {
     stuck: number
     waiting_stock: number
     waiting_cs: number
+    other_warehouse: number
     oldest_since: string | null
 }
 
@@ -61,11 +62,19 @@ const cards = computed(() => [
         tone: "text-amber-600",
         chip: "border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-400",
     },
+    {
+        key: "other_warehouse" as Signal,
+        icon: faWarehouse,
+        title: ctrans("Needs another warehouse"),
+        hint: ctrans("Held because home cannot ship the whole order. Open it to see why and where it can go, or wait for stock."),
+        tone: "text-amber-600",
+        chip: "border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-400",
+    },
 ].map(card => ({
     ...card,
-    total: props.attention.stages.reduce((sum, stage) => sum + stage[card.key], 0),
-    stages: props.attention.stages.filter(stage => stage[card.key] > 0),
-})))
+    total: props.attention.stages.reduce((sum, stage) => sum + (stage[card.key] ?? 0), 0),
+    stages: props.attention.stages.filter(stage => (stage[card.key] ?? 0) > 0),
+})).filter(card => card.key !== "other_warehouse" || card.total > 0))
 
 const nothingToDo = computed(() => cards.value.every(card => card.total === 0))
 

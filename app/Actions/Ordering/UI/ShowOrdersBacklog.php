@@ -224,7 +224,7 @@ class ShowOrdersBacklog extends OrgAction
         }
         $showsStage = IndexOrders::make()->showsStage($this->tab);
         if ($showsStage) {
-            $allowed['attention'] = ['stuck', 'waiting_stock', 'waiting_cs'];
+            $allowed['attention'] = IndexOrders::BACKLOG_ATTENTION;
         }
         $splitsPayment = !in_array($this->tab, [OrdersBacklogTabsEnum::IN_BASKET->value, OrdersBacklogTabsEnum::SUBMITTED_PAID->value, OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value]);
         if ($splitsPayment) {

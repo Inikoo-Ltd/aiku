@@ -21,6 +21,7 @@ use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
@@ -65,7 +66,7 @@ class IndexOrders extends OrgAction
 
     protected const array BACKLOG_STAGE_BUCKETS = ['submitted_unpaid', 'submitted_paid', 'in_warehouse', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised'];
 
-    protected const array BACKLOG_ATTENTION = ['stuck', 'waiting_stock', 'waiting_cs'];
+    public const array BACKLOG_ATTENTION = ['stuck', 'waiting_stock', 'waiting_cs', 'other_warehouse'];
 
     protected const string STAGE_SINCE_SQL = "coalesce(case orders.state when 'submitted' then orders.submitted_at when 'in_warehouse' then orders.in_warehouse_at when 'handling' then orders.handling_at when 'handling_blocked' then orders.handling_blocked_at when 'picked' then orders.picked_at when 'packing' then orders.packing_at when 'packed' then orders.packed_at when 'finalised' then orders.finalised_at end, orders.in_warehouse_at, orders.submitted_at)";
 
@@ -85,8 +86,9 @@ class IndexOrders extends OrgAction
     {
         return match ($element) {
             'waiting_stock' => sprintf(self::WAITING_LINES_SQL, 'has_waiting_warehouse'),
-            'waiting_cs'    => sprintf(self::WAITING_LINES_SQL, 'has_waiting_crm'),
-            default         => self::STAGE_SINCE_SQL." < '".self::stuckCutoff()->toDateTimeString()."'",
+            'waiting_cs'      => sprintf(self::WAITING_LINES_SQL, 'has_waiting_crm'),
+            'other_warehouse' => "orders.state = 'submitted' and orders.data->'".SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD."' is not null",
+            default           => self::STAGE_SINCE_SQL." < '".self::stuckCutoff()->toDateTimeString()."'",
         };
     }
 
@@ -100,10 +102,10 @@ class IndexOrders extends OrgAction
     }
 
     /**
-     * How many orders of the bucket sit too long in their stage, or hold lines the picker could not pick.
+     * How many orders of the bucket sit too long in their stage, hold lines the picker could not pick, or are held for another company's warehouse (INI-485).
      *
      * @param array{scope?: ?string, channel?: ?string, production_review?: ?string} $current
-     * @return array{stuck: int, waiting_stock: int, waiting_cs: int, total: int, oldest_since: ?string}
+     * @return array{stuck: int, waiting_stock: int, waiting_cs: int, other_warehouse: int, total: int, oldest_since: ?string}
      */
     public function backlogAttentionCounts(Group|Organisation|Shop $parent, string $bucket, array $current = []): array
     {
@@ -129,6 +131,7 @@ class IndexOrders extends OrgAction
                 'count(*) filter (where '.$this->attentionSql('stuck').') as stuck, '
                 .'count(*) filter (where '.$this->attentionSql('waiting_stock').') as waiting_stock, '
                 .'count(*) filter (where '.$this->attentionSql('waiting_cs').') as waiting_cs, '
+                .'count(*) filter (where '.$this->attentionSql('other_warehouse').') as other_warehouse, '
                 .'count(*) as total, min('.self::STAGE_SINCE_SQL.') as oldest_since'
             )
             ->first();
@@ -136,15 +139,16 @@ class IndexOrders extends OrgAction
         return [
             'stuck'         => (int) $row->stuck,
             'waiting_stock' => (int) $row->waiting_stock,
-            'waiting_cs'    => (int) $row->waiting_cs,
-            'total'         => (int) $row->total,
-            'oldest_since'  => $row->oldest_since ? Carbon::parse($row->oldest_since)->toIso8601String() : null,
+            'waiting_cs'      => (int) $row->waiting_cs,
+            'other_warehouse' => (int) $row->other_warehouse,
+            'total'           => (int) $row->total,
+            'oldest_since'    => $row->oldest_since ? Carbon::parse($row->oldest_since)->toIso8601String() : null,
         ];
     }
 
     /**
      * The orders nobody is moving: per stage how many are stuck or hold unpickable lines, and the ones waiting longest.
-     * Unpaid orders wait on the customer, not on us, so they stay out.
+     * Unpaid orders wait on the customer, not on us, so they stay out, except a cash on delivery order held for another warehouse.
      *
      * @return array{stuck_after_working_days: int, stages: array<int, array<string, mixed>>, oldest: array<int, array<string, mixed>>}
      */
@@ -154,6 +158,11 @@ class IndexOrders extends OrgAction
         foreach (array_diff(self::BACKLOG_STAGE_BUCKETS, ['submitted_unpaid']) as $bucket) {
             $stages[] = ['tab' => $bucket] + $this->backlogAttentionCounts($parent, $bucket);
         }
+
+        $this->bucket = OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value;
+        $unpaid       = $this->baseQuery($parent);
+        $this->applyBucket($unpaid, $parent, null);
+        $stages[] = ['tab' => $this->bucket, 'stuck' => 0, 'waiting_stock' => 0, 'waiting_cs' => 0, 'other_warehouse' => $unpaid->whereRaw($this->attentionSql('other_warehouse'))->count(), 'total' => 0, 'oldest_since' => null];
 
         $this->bucket = null;
         $oldest       = $this->baseQuery($parent)->toBase()

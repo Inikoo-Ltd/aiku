@@ -2843,3 +2843,69 @@ test('an order no other warehouse may take says why, and shop settings fall back
         forgetShopRoutingToOtherWarehouse($this);
     }
 });
+
+test('the orders backlog counts an order held for another warehouse, paid or not, the same one the release job finds, and forgets it once sent', function () {
+    [$products, , $dispatcher, $submit] = shopRoutingToOtherWarehouse($this, ['only_elsewhere' => 'hold']);
+    $indexOrders    = \App\Actions\Ordering\Order\UI\IndexOrders::make();
+    $heldInBacklog  = fn () => collect($indexOrders->backlogAttention($this->shop)['stages'])->sum('other_warehouse');
+    $heldForRelease = fn () => (new ReflectionMethod(\App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse::class, 'heldOrders'))->invoke(null)->where('shop_id', $this->shop->id)->pluck('id')->all();
+    $shopState      = $this->shop->fresh()->state;
+    $this->shop->updateQuietly(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::OPEN]);
+    $backlog = fn (string $tab, string $query = '') => $this->get(route('grp.org.shops.show.ordering.backlog', [$this->organisation->slug, $this->shop->slug, 'tab' => $tab]).$query)->assertOk()->viewData('page')['props'];
+
+    try {
+        $before = $heldInBacklog();
+        $order  = $submit([[$products['at_zero'], 3]]);
+        SendOrderToWarehouse::make()->action($order, []);
+        $order = $order->fresh();
+        $other = $submit([[$products['in_stock'], 1]]);
+        \App\Models\Ordering\Order::where('id', $other->id)->update(['submitted_at' => now()->subYears(30)]);
+        expect($order->pay_status)->toBe(\App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID)
+            ->and($order->state)->toBe(OrderStateEnum::SUBMITTED);
+
+        $unpaidStage = collect($indexOrders->backlogAttention($this->shop)['stages'])->firstWhere('tab', 'submitted_unpaid');
+        expect($heldInBacklog() - $before)->toBe(1)
+            ->and($unpaidStage)->toMatchArray(['stuck' => 0, 'waiting_stock' => 0, 'waiting_cs' => 0])
+            ->and(collect($indexOrders->backlogAttention($this->shop)['oldest'])->pluck('reference'))->not->toContain($other->reference)
+            ->and($heldForRelease())->toContain($order->id);
+
+        $filtered = $backlog('submitted_unpaid', '&submitted_unpaid_elements[attention]=other_warehouse');
+        expect(collect($filtered['submitted_unpaid']['data'])->pluck('reference')->all())->toBe([$order->reference])
+            ->and($filtered['backlog_filters']['current']['attention'])->toBe('other_warehouse')
+            ->and($filtered['backlog_filters']['counts']['attention']['other_warehouse'])->toBe(1);
+
+        \App\Models\Ordering\Order::where('id', $order->id)->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+        $paid = $backlog('submitted_paid', '&submitted_paid_elements[attention]=other_warehouse');
+        expect(collect($paid['submitted_paid']['data'])->pluck('reference')->all())->toBe([$order->reference])
+            ->and(collect($paid['attention']['stages'])->firstWhere('tab', 'submitted_paid')['other_warehouse'])->toBe(1)
+            ->and($heldInBacklog() - $before)->toBe(1);
+
+        $this->patch(route('grp.models.order.state.in-other-warehouse', [$order->id, $dispatcher->id]))->assertSessionHasNoErrors();
+        expect($heldInBacklog())->toBe($before)
+            ->and($heldForRelease())->not->toContain($order->id);
+    } finally {
+        $this->shop->updateQuietly(['state' => $shopState]);
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('the staff product page lists what home and each listed warehouse could ship whole after its margin, and nothing while the shop lists none', function () {
+    [$products, , $dispatcher] = shopRoutingToOtherWarehouse($this);
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings, ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 4]]])]);
+    $staffPage = fn (Product $product) => $this->get(route('grp.org.shops.show.catalogue.products.all_products.show', [$this->organisation->slug, $this->shop->slug, $product->slug]))->assertOk()->viewData('page')['props']['showcase'];
+
+    try {
+        $product = \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['at_zero']->fresh())->fresh();
+
+        expect($staffPage($product)['stock_by_warehouse'])->toBe([
+            ['name' => $this->organisation->name, 'is_home' => true, 'quantity' => 0, 'safety_margin' => 0],
+            ['name' => $dispatcher->name, 'is_home' => false, 'quantity' => 996, 'safety_margin' => 4],
+        ])
+            ->and($product->available_quantity)->toBe(996);
+
+        forgetShopRoutingToOtherWarehouse($this);
+        expect($staffPage($product->fresh())['stock_by_warehouse'])->toBe([]);
+    } finally {
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});

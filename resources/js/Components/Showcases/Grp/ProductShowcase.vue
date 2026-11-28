@@ -100,6 +100,12 @@ const props = defineProps<{
 			org_stock_code: string
 			quantity: number
 		}[]
+		stock_by_warehouse?: {
+			name: string
+			is_home: boolean
+			quantity: number | null
+			safety_margin: number
+		}[]
 		incoming_stock?: {
 			type: string
 			reference: string
@@ -415,6 +421,19 @@ const getTooltips = () => {
 					<tr v-for="part in partsOutOfStock" :key="part.id" class="border-b border-red-100 last:border-0">
 						<td class="py-1 font-medium text-red-600">{{ part.code }}</td>
 						<td class="py-1 text-right tabular-nums text-red-600">{{ locale.number(Number(part.quantity_available ?? 0)) }}</td>
+					</tr>
+				</table>
+			</div>
+
+			<!-- Section: Warehouses it sells from -->
+			<div v-if="data.stock_by_warehouse?.length" class="mb-4 px-2">
+				<div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1" v-tooltip="ctrans('An order line ships whole from one warehouse, so the available figure is the best of these, never their sum')">{{ ctrans("Sells from") }}</div>
+				<table class="w-full text-sm">
+					<tr v-for="warehouse in data.stock_by_warehouse" :key="warehouse.name" class="border-b border-gray-100 last:border-0">
+						<td class="py-1 font-medium">{{ warehouse.name }}</td>
+						<td class="py-1 text-gray-500">{{ warehouse.is_home ? ctrans("Home") : (warehouse.safety_margin ? ctrans("after keeping :margin back", { margin: locale.number(warehouse.safety_margin) }) : "") }}</td>
+						<td v-if="warehouse.quantity === null" class="py-1 text-right text-gray-400" v-tooltip="warehouse.is_home ? ctrans('Not counted yet') : ctrans('This warehouse has no same pack of this product to ship')">—</td>
+						<td v-else class="py-1 text-right tabular-nums">{{ locale.number(warehouse.quantity) }}</td>
 					</tr>
 				</table>
 			</div>
