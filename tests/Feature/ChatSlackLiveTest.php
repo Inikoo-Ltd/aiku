@@ -722,9 +722,25 @@ test('Verba channel list names the Slack workspace of each channel from the seco
     \Illuminate\Support\Facades\Config::set('services.slack.team_id', 'TMAIN');
     \Illuminate\Support\Facades\Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-secret', 'name_suffix' => 'awa', 'name' => 'AW Advantage']]);
     $awa = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWADOT{$this->s}", 'name' => "dot-{$this->s}", 'slack_team_id' => 'TAWA', 'is_public' => true, 'is_member' => true]);
+    SlackUser::create(['slack_id' => "UVIEWAWA{$this->s}", 'user_id' => $this->viewer->id, 'email' => $this->viewer->email, 'real_name' => 'Viewer Person', 'data' => ['team_id' => 'TAWA']]);
 
     $workspaces = collect(\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->channels($this->viewer))->pluck('workspace', 'id');
 
     expect($workspaces->get($this->channel->id))->toBeNull()
         ->and($workspaces->get($awa->id))->toBe('AW Advantage');
+});
+
+test('Public channels of another Slack workspace show only to people with an account there, engineers excepted; main workspace channels show to everyone, INI-595', function () {
+    \Illuminate\Support\Facades\Config::set('services.slack.team_id', 'TMAIN');
+    \Illuminate\Support\Facades\Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-secret', 'name_suffix' => 'awa', 'name' => 'AW Advantage']]);
+    $bali = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWATRANS{$this->s}", 'name' => "trans-{$this->s}", 'slack_team_id' => 'TAWA', 'is_public' => true, 'is_member' => true]);
+    $listed = fn () => collect(\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->channels($this->viewer))->pluck('id');
+
+    expect($bali->isVisibleTo($this->viewer))->toBeFalse()
+        ->and($this->channel->isVisibleTo($this->viewer))->toBeTrue()
+        ->and($listed())->not->toContain($bali->id)->toContain($this->channel->id);
+
+    SlackUser::create(['slack_id' => "UVIEWAWA{$this->s}", 'user_id' => $this->viewer->id, 'email' => $this->viewer->email, 'real_name' => 'Viewer Person', 'data' => ['team_id' => 'TAWA']]);
+    expect($bali->isVisibleTo($this->viewer))->toBeTrue()
+        ->and($listed())->toContain($bali->id, $this->channel->id);
 });

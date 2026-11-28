@@ -156,10 +156,23 @@ class SlackChannel extends Model
     {
         $query->kept()->where('group_id', $user->group_id);
         if (!self::userMayReadPublicChannels($user)) {
-            $query->whereRaw('false');
+            return $query->whereRaw('false');
+        }
+        if (Ticket::canBeManagedBy($user)) {
+            return $query;
         }
 
-        return $query;
+        return $query->where(fn (Builder $query) => $query->whereNull('slack_team_id')->orWhereIn('slack_team_id', self::linkedSlackTeams($user)));
+    }
+
+    /**
+     * Another workspace's public channels show only to people with an account there, as in Slack (INI-595).
+     *
+     * @return array<int, string>
+     */
+    private static function linkedSlackTeams(User $user): array
+    {
+        return self::linkedSlackPeople($user)->pluck('data.team_id')->filter()->unique()->values()->all();
     }
 
     public function isVisibleTo(User $user): bool
