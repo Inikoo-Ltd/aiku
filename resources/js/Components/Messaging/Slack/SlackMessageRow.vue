@@ -11,7 +11,7 @@ import { router, usePage } from "@inertiajs/vue3"
 import { Dialog, Popover } from "primevue"
 import StaffProfileTrigger from "@/Components/Messaging/StaffProfileTrigger.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCommentDots, faFile, faLink, faPencil, faReply, faRobot, faSmilePlus, faThumbtack, faTimes, faTrashAlt } from "@fal"
+import { faBell, faCheck, faCommentDots, faFile, faLink, faPencil, faReply, faRobot, faSmilePlus, faThumbtack, faTimes, faTrashAlt } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -24,8 +24,10 @@ import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import SlackNodes, { type SlackNode } from "@/Components/Messaging/Slack/SlackNodes.vue"
 import SlackMessageVersions from "@/Components/Messaging/Slack/SlackMessageVersions.vue"
 import SlackMessageFiles, { type SlackMessageFile } from "@/Components/Messaging/Slack/SlackMessageFiles.vue"
+import ScheduleTimeDialog from "@/Components/Messaging/ScheduleTimeDialog.vue"
+import { errorOf as scheduleErrorOf, inAnHour, tomorrowAtNine, useUserTimezone, wallClockLabel } from "@/Components/Messaging/scheduledMessages"
 
-library.add(faCheck, faCommentDots, faFile, faLink, faPencil, faReply, faRobot, faSmilePlus, faThumbtack, faTimes, faTrashAlt)
+library.add(faBell, faCheck, faCommentDots, faFile, faLink, faPencil, faReply, faRobot, faSmilePlus, faThumbtack, faTimes, faTrashAlt)
 
 export interface SlackStreamMessage {
     id: number
@@ -183,8 +185,29 @@ const togglePin = async () => {
         busy.value = false
     }
 }
+const timezone = useUserTimezone()
+const choosingReminder = ref(false)
+const reminderError = ref<string | null>(null)
+const reminderSet = ref<string | null>(null)
+const remind = async (local: string) => {
+    error.value = null
+    reminderError.value = null
+    try {
+        await axios.post(route("grp.chat.staff.slack.reminders.store", { slackChannel: channelId.value }), { ts: shown.value.ts, remind_at: local })
+        choosingReminder.value = false
+        reminderSet.value = ctrans("Reminder set for :time", { time: wallClockLabel(local) })
+        setTimeout(() => (reminderSet.value = null), 4000)
+    } catch (exception) {
+        const sentence = scheduleErrorOf(exception, ctrans("The reminder was not set. Try again."))
+        if (choosingReminder.value) reminderError.value = sentence
+        else error.value = sentence
+    }
+}
 const toolbarMenu = computed<DeskToolbarMenuItem[]>(() => [
     { label: ctrans("Copy link"), icon: "fal fa-link", command: copyLink },
+    { label: ctrans("Remind me in an hour"), icon: "fal fa-bell", command: () => remind(inAnHour(timezone.value)) },
+    { label: ctrans("Remind me tomorrow at 9:00"), icon: "fal fa-bell", command: () => remind(tomorrowAtNine(timezone.value)) },
+    { label: ctrans("Remind me at a time…"), icon: "fal fa-bell", command: () => (choosingReminder.value = true) },
     ...(canPin.value ? [{ label: shown.value.is_pinned ? ctrans("Unpin from channel") : ctrans("Pin to channel"), icon: "fal fa-thumbtack", command: togglePin }] : []),
     ...(isOwn.value
         ? [
@@ -424,6 +447,8 @@ const confirmDelete = async () => {
             <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
         </button>
         <span v-if="copied" class="absolute -top-4 right-4 z-20 rounded bg-[#1d1c1d] px-2 py-1 text-xs text-white" role="status">{{ ctrans("Link copied") }}</span>
+        <span v-else-if="reminderSet" class="absolute -top-4 right-4 z-20 rounded bg-[#1d1c1d] px-2 py-1 text-xs text-white" role="status">{{ reminderSet }}</span>
+        <ScheduleTimeDialog v-if="choosingReminder" v-model:visible="choosingReminder" :header="ctrans('Remind me')" :confirm-label="ctrans('Set reminder')" :error="reminderError" @pick="remind" />
 
         <Popover v-if="canReact" ref="picker">
             <EmojiPicker @pick="onPick" />

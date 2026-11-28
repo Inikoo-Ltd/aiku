@@ -20,6 +20,9 @@ import { formatBytes } from "@/Composables/useUploadLimits"
 import { useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 import { loadDraft, saveDraft } from "@/Components/Messaging/deskDrafts"
 import type { SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
+import SendLaterButton from "@/Components/Messaging/SendLaterButton.vue"
+import ScheduledMessagesDialog from "@/Components/Messaging/ScheduledMessagesDialog.vue"
+import { errorOf, useScheduledMessages, wallClockLabel } from "@/Components/Messaging/scheduledMessages"
 
 export interface SlackWriteState {
     allowed: boolean
@@ -61,6 +64,12 @@ const sending = ref(false)
 const error = ref<string | null>(null)
 const confirmingEveryone = ref(false)
 const offerConnect = ref(false)
+const scheduling = ref(false)
+const scheduledNotice = ref<string | null>(null)
+const pendingScheduleAt = ref<string | null>(null)
+const showScheduled = ref(false)
+const sendLater = ref<InstanceType<typeof SendLaterButton> | null>(null)
+const { load: loadScheduled, waiting: scheduledWaiting, failed: scheduledFailed } = useScheduledMessages()
 const EVERYONE_CONFIRM_ABOVE = 6
 let idempotencyKey: string | null = null
 
@@ -240,6 +249,7 @@ useSlackLive(() => props.liveChannel, (event: SlackLiveEvent) => {
 
 let dropTarget: HTMLElement | null = null
 onMounted(() => {
+    loadScheduled()
     dropTarget = rootEl.value?.parentElement ?? null
     dropTarget?.addEventListener("dragover", onDragOver)
     dropTarget?.addEventListener("drop", onDrop)
@@ -276,6 +286,7 @@ watch([() => props.channelId, () => props.threadTs], () => {
 
 watch(text, (value) => {
     error.value = null
+    if (value) scheduledNotice.value = null
     saveDraft(props.channelId, props.threadTs, value)
 })
 
@@ -321,6 +332,40 @@ const send = async (notifyEveryone = false) => {
                 : e?.response?.data?.message ?? ctrans("The message was not sent. Try again.")
     } finally {
         sending.value = false
+    }
+}
+
+const schedule = async (local: string, notifyEveryone = false) => {
+    if (scheduling.value || !text.value.trim() || attached.value.length) return
+    confirmingEveryone.value = false
+    scheduling.value = true
+    error.value = null
+    const sentFrom = { channelId: props.channelId, threadTs: props.threadTs ?? null }
+    try {
+        await axios.post(route("grp.chat.staff.slack.scheduled.store", { slackChannel: props.channelId }), {
+            text: text.value,
+            send_at: local,
+            thread_ts: props.threadTs ?? null,
+            also_to_channel: Boolean(props.threadTs) && alsoToChannel.value,
+            notify_everyone: notifyEveryone,
+        })
+        pendingScheduleAt.value = null
+        saveDraft(sentFrom.channelId, sentFrom.threadTs, "")
+        if (sentFrom.channelId === props.channelId && sentFrom.threadTs === (props.threadTs ?? null)) text.value = ""
+        alsoToChannel.value = false
+        sendLater.value?.close()
+        scheduledNotice.value = ctrans("Scheduled for :time.", { time: wallClockLabel(local) })
+        loadScheduled()
+    } catch (e: any) {
+        if (e?.response?.status === 422 && e?.response?.data?.errors?.notify_everyone) {
+            pendingScheduleAt.value = local
+            sendLater.value?.close()
+            confirmingEveryone.value = true
+            return
+        }
+        error.value = e?.response?.status === 429 ? ctrans("You are sending too fast. Try again in a moment.") : errorOf(e, ctrans("The message was not scheduled. Try again."))
+    } finally {
+        scheduling.value = false
     }
 }
 
@@ -393,7 +438,21 @@ const editLast = () => {
                     <Checkbox v-model="alsoToChannel" binary size="small" :disabled="sending" input-id="desk-also-to-channel" />
                     {{ write.direct ? ctrans("Also send to the conversation") : channelName ? ctrans("Also send to #:channel", { channel: channelName }) : ctrans("Also send to channel") }}
                 </label>
+                <SendLaterButton
+                    ref="sendLater"
+                    :disabled="!text.trim() || attached.length > 0 || sending"
+                    :disabled-reason="attached.length ? ctrans('Files cannot be scheduled yet, only text.') : null"
+                    :busy="scheduling"
+                    :error="error"
+                    @pick="schedule($event)" />
+                <button v-if="scheduledWaiting || scheduledFailed" type="button" class="whitespace-nowrap text-xs hover:underline" :class="scheduledFailed ? 'text-red-600' : 'text-gray-500'" @click="showScheduled = true">
+                    {{ scheduledFailed ? ctrans(":count not sent", { count: String(scheduledFailed) }) : ctrans(":count scheduled", { count: String(scheduledWaiting) }) }}
+                </button>
                 <p v-if="error" class="ml-auto text-xs text-red-600" role="alert">{{ error }}</p>
+                <p v-else-if="scheduledNotice" class="ml-auto text-xs text-gray-600" role="status">
+                    {{ scheduledNotice }}
+                    <button type="button" class="font-medium underline hover:text-gray-900" @click="showScheduled = true">{{ ctrans("See scheduled") }}</button>
+                </p>
                 <p v-else class="ml-auto hidden text-xxs text-gray-400 sm:block">{{ ctrans("Shift + Enter to add a new line") }}</p>
             </div>
         </template>
@@ -401,14 +460,15 @@ const editLast = () => {
             <p class="text-sm text-gray-700">{{ ctrans("This will notify everyone in this channel.") }}</p>
             <template #footer>
                 <div class="flex w-full gap-2">
-                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="confirmingEveryone = false">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="confirmingEveryone = false; pendingScheduleAt = null">
                         <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                     </Button>
-                    <Button type="primary" full :label="ctrans('Notify everyone')" @click="send(true)">
+                    <Button type="primary" full :label="ctrans('Notify everyone')" @click="pendingScheduleAt ? schedule(pendingScheduleAt, true) : send(true)">
                         <template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </div>
             </template>
         </Dialog>
+        <ScheduledMessagesDialog v-model:visible="showScheduled" />
     </div>
 </template>

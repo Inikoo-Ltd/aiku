@@ -72,6 +72,7 @@ return [
      */
     'unrestricted_hidden_columns' => [
         'staff_messages'             => ['body'],
+        'staff_message_schedules'    => ['text', 'failure_reason'],
         'staff_message_translations' => ['body'],
         'staff_message_stories'      => ['headline', 'blurb'],
         'slack_messages'             => ['text', 'data', 'search_vector'],

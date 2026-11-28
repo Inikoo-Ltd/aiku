@@ -44,6 +44,7 @@ EMPTY_TABLES=(
   mailshot_has_dispatched_emails customer_has_dispatched_emails ses_notifications notifications
   manufacture_payroll_adjustments
   staff_messages slack_messages staff_message_stories slack_message_versions slack_files
+  staff_message_schedules staff_message_reminders
   staff_call_recordings staff_call_recording_tracks
 )
 EMPTY_PATTERNS=('crawl\_%' 'search\_console\_%' 'bank\_%')

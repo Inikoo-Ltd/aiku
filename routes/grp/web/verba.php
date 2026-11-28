@@ -89,6 +89,16 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/slack/{slackChannel}/messages/own-text', \App\Actions\Chat\Staff\Slack\Write\GetOwnSlackMessageText::class)->middleware('throttle:60,1,slack-edit-text')->name('slack.messages.own-text');
     Route::patch('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\EditSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.update');
     Route::delete('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\DeleteSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.delete');
+    Route::middleware('throttle:30,1,verba-scheduled')->group(function () {
+        Route::post('/slack/{slackChannel}/scheduled', [\App\Actions\Chat\Staff\Scheduled\ScheduleStaffMessage::class, 'inSlackChannel'])->name('slack.scheduled.store');
+        Route::post('/conversations/{staffConversation}/scheduled', [\App\Actions\Chat\Staff\Scheduled\ScheduleStaffMessage::class, 'inConversation'])->name('conversations.scheduled.store');
+        Route::patch('/scheduled/{staffMessageSchedule}', \App\Actions\Chat\Staff\Scheduled\UpdateStaffMessageSchedule::class)->name('scheduled.update');
+        Route::delete('/scheduled/{staffMessageSchedule}', [\App\Actions\Chat\Staff\Scheduled\UpdateStaffMessageSchedule::class, 'inCancel'])->name('scheduled.cancel');
+        Route::post('/scheduled/{staffMessageSchedule}/send', \App\Actions\Chat\Staff\Scheduled\SendStaffMessageSchedule::class)->name('scheduled.send');
+        Route::post('/slack/{slackChannel}/reminders', [\App\Actions\Chat\Staff\Scheduled\StoreStaffMessageReminder::class, 'inSlackChannel'])->name('slack.reminders.store');
+        Route::post('/messages/{staffMessage}/reminders', [\App\Actions\Chat\Staff\Scheduled\StoreStaffMessageReminder::class, 'inStaffMessage'])->name('messages.reminders.store');
+    });
+    Route::get('/scheduled', \App\Actions\Chat\Staff\Scheduled\GetStaffMessageSchedules::class)->name('scheduled.index');
     Route::get('/slack-channels', \App\Actions\Chat\Staff\Json\GetSlackPublicChannelDirectory::class)->name('slack.directory');
     Route::post('/slack-channels', \App\Actions\Chat\Staff\Slack\Write\StoreSlackPublicChannel::class)->middleware('throttle:10,1,slack-channel-create')->name('slack.channels.store');
     Route::patch('/slack/{slackChannel}/channel', \App\Actions\Chat\Staff\Slack\Write\UpdateSlackPublicChannel::class)->middleware('throttle:20,1,slack-channel-update')->name('slack.channels.update');

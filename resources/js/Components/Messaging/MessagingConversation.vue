@@ -33,10 +33,14 @@ import DeskMessageEditor, { type DeskPerson } from "@/Components/Messaging/DeskM
 import DeskMessageToolbar, { type DeskToolbarMenuItem } from "@/Components/Messaging/DeskMessageToolbar.vue"
 import { STAFF_MESSAGE_COUNT_SHOWN_FROM, STAFF_MESSAGE_MAX_CHARACTERS, staffMessageCharacters } from "@/Components/Messaging/staffMessageLimit"
 import { useLocaleStore } from "@/Stores/locale"
-import { faTasks, faCommentDots, faFolder } from "@fal"
+import { faTasks, faCommentDots, faFolder, faBell } from "@fal"
 import { faPhone, faPhoneSlash, faVideo, faDesktop } from "@fal"
 import StaffHelpGrantButton from "@/Components/Messaging/Help/StaffHelpGrantButton.vue"
 import ChatWallpaperButton from "@/Components/Messaging/ChatWallpaperButton.vue"
+import SendLaterButton from "@/Components/Messaging/SendLaterButton.vue"
+import ScheduledMessagesDialog from "@/Components/Messaging/ScheduledMessagesDialog.vue"
+import ScheduleTimeDialog from "@/Components/Messaging/ScheduleTimeDialog.vue"
+import { errorOf, inAnHour, tomorrowAtNine, useScheduledMessages, useUserTimezone, wallClockLabel } from "@/Components/Messaging/scheduledMessages"
 import { hasWallpaper, useBubbles, wallpaperStyle } from "@/Components/Messaging/chatWallpaper"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink, faInfoCircle)
@@ -60,7 +64,7 @@ const emit = defineEmits<{
 
 const store = useStaffMessaging()
 const calls = useStaffCalls()
-library.add(faPhone, faPhoneSlash, faVideo, faDesktop, faTasks, faCommentDots, faFolder)
+library.add(faPhone, faPhoneSlash, faVideo, faDesktop, faTasks, faCommentDots, faFolder, faBell)
 
 const isDesk = computed(() => !!props.desk)
 
@@ -536,6 +540,7 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 onMounted(() => {
+    if (isDesk.value) loadScheduled()
     scrollBottom()
     nowInterval = setInterval(() => (now.value = Date.now()), 60 * 1000)
     window.addEventListener("keydown", handleEscapeKey)
@@ -570,6 +575,57 @@ const setReply = (message: StaffMessage) => {
 
 const clearReply = () => {
     parentMessage.value = null
+}
+
+const scheduling = ref(false)
+const scheduleError = ref<string | null>(null)
+const scheduledNotice = ref<string | null>(null)
+const showScheduled = ref(false)
+const sendLater = ref<InstanceType<typeof SendLaterButton> | null>(null)
+const { load: loadScheduled, waiting: scheduledWaiting, failed: scheduledFailed } = useScheduledMessages()
+
+watch(newMessage, (value) => {
+    scheduleError.value = null
+    if (value) scheduledNotice.value = null
+})
+
+const scheduleCurrent = async (local: string) => {
+    const body = newMessage.value.trim()
+    if (scheduling.value || !body || pendingImage.value || isMessageTooLong.value) return
+    scheduling.value = true
+    scheduleError.value = null
+    try {
+        await axios.post(route("grp.chat.staff.conversations.scheduled.store", { staffConversation: props.conversation.ulid }), {
+            text: body,
+            send_at: local,
+            parent_id: parentMessage.value?.id ?? null,
+        })
+        newMessage.value = ""
+        parentMessage.value = null
+        sendLater.value?.close()
+        scheduledNotice.value = ctrans("Scheduled for :time.", { time: wallClockLabel(local) })
+        loadScheduled()
+    } catch (exception) {
+        scheduleError.value = errorOf(exception, ctrans("The message was not scheduled. Try again."))
+    } finally {
+        scheduling.value = false
+    }
+}
+
+const timezone = useUserTimezone()
+const remindFor = ref<StaffMessage | null>(null)
+const remindError = ref<string | null>(null)
+const remind = async (message: StaffMessage, local: string) => {
+    remindError.value = null
+    try {
+        await axios.post(route("grp.chat.staff.messages.reminders.store", { staffMessage: message.id }), { remind_at: local })
+        remindFor.value = null
+        scheduledNotice.value = ctrans("Reminder set for :time.", { time: wallClockLabel(local) })
+    } catch (exception) {
+        const sentence = errorOf(exception, ctrans("The reminder was not set. Try again."))
+        if (remindFor.value) remindError.value = sentence
+        else scheduleError.value = sentence
+    }
 }
 
 const sendCurrent = async () => {
@@ -639,8 +695,12 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 
 const myReactionsOf = (message: StaffMessage) => reactionEntries(message).filter(([, userIds]) => (userIds as number[]).includes(myId.value)).map(([emoji]) => emoji)
 const canCreateTaskFrom = (message: StaffMessage) => !message.client_status && !message.gif_url && !!messageText(message) && props.conversation.context_type !== "StaffTask"
-const deskMenuOf = (message: StaffMessage): DeskToolbarMenuItem[] =>
-    canCreateTaskFrom(message) ? [{ label: ctrans("Create a task from this message"), icon: "fal fa-tasks", command: () => taskFromMessage(message) }] : []
+const deskMenuOf = (message: StaffMessage): DeskToolbarMenuItem[] => [
+    ...(canCreateTaskFrom(message) ? [{ label: ctrans("Create a task from this message"), icon: "fal fa-tasks", command: () => taskFromMessage(message) }] : []),
+    { label: ctrans("Remind me in an hour"), icon: "fal fa-bell", command: () => remind(message, inAnHour(timezone.value)) },
+    { label: ctrans("Remind me tomorrow at 9:00"), icon: "fal fa-bell", command: () => remind(message, tomorrowAtNine(timezone.value)) },
+    { label: ctrans("Remind me at a time…"), icon: "fal fa-bell", command: () => (remindFor.value = message) },
+]
 
 const reactionPicker = ref()
 const reactionPickerFor = ref<StaffMessage | null>(null)
@@ -1238,6 +1298,33 @@ const onReactionPick = (emoji: string) => {
                     </button>
                 </template>
             </div>
+
+            <div v-if="isDesk" class="-mt-1 flex items-center gap-x-3 px-1 pb-2">
+                <SendLaterButton
+                    ref="sendLater"
+                    :disabled="!newMessage.trim() || !!pendingImage || isMessageTooLong"
+                    :disabled-reason="pendingImage ? ctrans('Pictures cannot be scheduled yet, only text.') : null"
+                    :busy="scheduling"
+                    :error="scheduleError"
+                    @pick="scheduleCurrent" />
+                <button v-if="scheduledWaiting || scheduledFailed" type="button" class="whitespace-nowrap text-xs hover:underline" :class="scheduledFailed ? 'text-red-600' : 'text-gray-500'" @click="showScheduled = true">
+                    {{ scheduledFailed ? ctrans(":count not sent", { count: String(scheduledFailed) }) : ctrans(":count scheduled", { count: String(scheduledWaiting) }) }}
+                </button>
+                <p v-if="scheduleError" class="ml-auto text-xs text-red-600" role="alert">{{ scheduleError }}</p>
+                <p v-else-if="scheduledNotice" class="ml-auto text-xs text-gray-600" role="status">
+                    {{ scheduledNotice }}
+                    <button type="button" class="font-medium underline hover:text-gray-900" @click="showScheduled = true">{{ ctrans("See scheduled") }}</button>
+                </p>
+            </div>
+            <ScheduledMessagesDialog v-if="isDesk" v-model:visible="showScheduled" />
+            <ScheduleTimeDialog
+                v-if="isDesk"
+                :visible="!!remindFor"
+                :header="ctrans('Remind me')"
+                :confirm-label="ctrans('Set reminder')"
+                :error="remindError"
+                @update:visible="(open: boolean) => { if (!open) remindFor = null }"
+                @pick="(local: string) => remindFor && remind(remindFor, local)" />
 
             <p
                 v-if="showsMessageLength"

@@ -1,8 +1,8 @@
 ---
 title: Režim sústredenia a upozornenia Verby
-summary: Zapnite režim sústredenia, aby na chvíľu prestali vyskakovať okná, zvuky a upozornenia v Slacku a v telefóne, pozrite si, kto sa sústredí, a vyberte, ako sa k vám dostanú správy, zmienky a hovory z Verby.
-date: 2026-11-27
-source_date: 2026-11-27
+summary: Zapnite režim sústredenia, aby na chvíľu prestali vyskakovať okná, zvuky a upozornenia v Slacku a v telefóne, pozrite si, kto sa sústredí, vyberte, ako sa k vám dostanú správy, zmienky a hovory z Verby, odošlite správu neskôr a nechajte si pripomenúť správu.
+date: 2026-11-28
+source_date: 2026-11-28
 tags: chat, messaging, verba, profile
 category: help-desk
 series: Verba
@@ -35,6 +35,18 @@ Chaty o úlohe, objednávke alebo dodávke zostávajú mimo zoznamu **Messages**
 
 V **Personal settings** rozhoduje **Alerts**, ako si aiku získa vašu pozornosť: **Pop-up time**, **Preview pop-ups** a pod **Chat alerts** zvuk pre **Colleague messages** (kolega vám píše), ktorý môžete zmeniť alebo stlmiť tlačidlom reproduktora. Ten istý zvuk zvoní aj pri prichádzajúcich hovoroch.
 
+<h2 id="send-later">Odoslať neskôr</h2>
+
+Naše tímy pracujú v rôznych časových pásmach. Ak chcete napísať hneď a nezobudiť kolegu, napíšte správu a kliknite pod políčkom na **Send later**: **In an hour**, **Tomorrow at 9:00** alebo **Choose a time…**. Časy sú vo vašom vlastnom časovom pásme, tom z vášho profilu. Funguje vo V·Desks, v priamych správach v Slacku aj v chatoch Verby, aj ako odpoveď vo vlákne.
+
+V danú minútu ju aiku odošle ako vás, presne ako keby ste vtedy stlačili odoslať. Ak sa nedá odoslať (kanál bol archivovaný, opustili ste chat, vaše pripojenie k Slacku treba obnoviť), neodošle sa neskôr sama: dostanete upozornenie v zvončeku s dôvodom a pod políčkom sa ukáže ako **not sent**.
+
+Kliknutím na **n scheduled** pod políčkom uvidíte svoje čakajúce správy. Každú môžete upraviť (text aj čas), odoslať hneď cez **Send now** alebo zrušiť cez **Don't send**. Správa, ktorá spomína ľudí, tam môže zmeniť len čas. Súbory a obrázky sa zatiaľ naplánovať nedajú, iba text.
+
+<h2 id="remind-me">Pripomenúť správu</h2>
+
+Ukážte na správu, otvorte ponuku **⋮** (**More actions**) a vyberte **Remind me in an hour**, **Remind me tomorrow at 9:00** alebo **Remind me at a time…**. V stanovenom čase zvonček ukáže, kto ju napísal a kde, s odkazom späť na správu. Dostanete ju len vy; do Slacku sa nič neposiela. Správa, ktorá sa medzitým zmazala, nezazvoní.
+
 <h2 id="notifications">Kam idú upozornenia</h2>
 
 V **Personal settings** **Notifications** vypisuje udalosti, o ktorých vás môžeme informovať. Upozornenie vnútri aiku dostanete vždy; pod **Notify me when** si pri každej udalosti vyberte, kam ešte chcete: **Email**, **Slack**, **Verba** alebo **Browser**.
@@ -47,6 +59,8 @@ Jedna udalosť patrí Verbe: **Someone @mentions me in a Slack channel**. Je vyp
 <li><b>Zvuky a vyskakovacie okná:</b> váš avatar → <b>Personal settings</b> → <b>Alerts</b>.</li>
 <li><b>Kam idú upozornenia:</b> váš avatar → <b>Personal settings</b> → <b>Notifications</b> → <b>Notify me when</b>.</li>
 <li><b>Nechať pracovný chat v zozname:</b> otvorte ho → <b>Watch</b>.</li>
+<li><b>Odoslať neskôr:</b> napíšte správu → <b>Send later</b> pod políčkom; <b>n scheduled</b> na úpravu, okamžité odoslanie alebo zrušenie.</li>
+<li><b>Pripomenúť:</b> ukážte na správu → <b>⋮</b> → <b>Remind me…</b>.</li>
 </ul>
 </aside>
 

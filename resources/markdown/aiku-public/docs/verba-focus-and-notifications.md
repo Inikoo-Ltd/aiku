@@ -1,7 +1,7 @@
 ---
 title: Focus mode and Verba notifications
-summary: Turn on focus mode to stop pop-ups, sounds, Slack and phone alerts for a while, see who is focusing, and choose how Verba messages, mentions and calls reach you.
-date: 2026-11-27
+summary: Turn on focus mode to stop pop-ups, sounds, Slack and phone alerts for a while, see who is focusing, choose how Verba messages, mentions and calls reach you, send a message later and have a message remind you.
+date: 2026-11-28
 tags: chat, messaging, verba, profile
 category: help-desk
 series: Verba
@@ -34,6 +34,18 @@ Chats about a task, an order or a delivery stay out of the **Messages** list unt
 
 In **Personal settings**, **Alerts** decides how aiku gets your attention: **Pop-up time**, **Preview pop-ups**, and under **Chat alerts** a sound for **Colleague messages** (a colleague writes to you), which you can change or mute with the speaker button. The same sound rings for incoming calls.
 
+<h2 id="send-later">Send later</h2>
+
+Our teams work in different time zones. To write now and not wake a colleague, type the message and click **Send later** under the box: **In an hour**, **Tomorrow at 9:00** or **Choose a time…**. Times are in your own time zone, the one in your profile. It works in V·Desks, Slack direct messages and Verba chats, also as a reply in a thread.
+
+At that minute aiku sends it as you, exactly as if you had pressed send then. If it cannot be sent (the channel was archived, you left the chat, your Slack connection needs renewing), it is not sent later on its own: you get a notification in the bell saying why, and it shows as **not sent** under the box.
+
+Click **n scheduled** under the box to see your messages waiting. Each one can be edited (text and time), sent now with **Send now**, or cancelled with **Don't send**. A message that mentions people can only change its time there. Files and pictures cannot be scheduled yet, only text.
+
+<h2 id="remind-me">Remind me about a message</h2>
+
+Point at a message, open the **⋮** (**More actions**) menu and choose **Remind me in an hour**, **Remind me tomorrow at 9:00** or **Remind me at a time…**. At that time the bell shows who wrote it and where, with a link back to the message. Only you get it; nothing is posted in Slack. A message deleted in the meantime does not ring.
+
 <h2 id="notifications">Where notifications go</h2>
 
 In **Personal settings**, **Notifications** lists the events you can be told about. You always get the notification inside aiku; under **Notify me when** pick where else you want it for each event: **Email**, **Slack**, **Verba** or **Browser**.
@@ -46,6 +58,8 @@ One event belongs to Verba: **Someone @mentions me in a Slack channel**. It is o
 <li><b>Sounds and pop-ups:</b> your avatar → <b>Personal settings</b> → <b>Alerts</b>.</li>
 <li><b>Where notifications go:</b> your avatar → <b>Personal settings</b> → <b>Notifications</b> → <b>Notify me when</b>.</li>
 <li><b>Keep a work chat in your list:</b> open it → <b>Watch</b>.</li>
+<li><b>Send later:</b> type the message → <b>Send later</b> under the box; <b>n scheduled</b> to edit, send now or cancel.</li>
+<li><b>Remind me:</b> point at a message → <b>⋮</b> → <b>Remind me…</b>.</li>
 </ul>
 </aside>
 

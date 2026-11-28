@@ -1111,3 +1111,150 @@ describe('Verba through MCP, INI-596', function () {
             ->and(App\Models\Helpers\Audit::where('auditable_type', 'SlackChannel')->where('auditable_id', $this->general->id)->pluck('user_id')->unique()->all())->toBe([$admin->id]);
     });
 });
+
+describe('scheduled messages and reminders, INI-471', function () {
+    beforeEach(function () {
+        $this->local    = fn (Illuminate\Support\Carbon $at) => $at->copy()->setTimezone($this->writer->timezone_name)->format('Y-m-d H:i');
+        $this->schedule = fn (SlackChannel|StaffConversation $target, string $text, Illuminate\Support\Carbon $at, array $extra = [], ?User $as = null) => actingAs($as ?? $this->writer)->postJson(
+            $target instanceof SlackChannel
+                ? route('grp.chat.staff.slack.scheduled.store', ['slackChannel' => $target->id])
+                : route('grp.chat.staff.conversations.scheduled.store', ['staffConversation' => $target->ulid]),
+            ['text' => $text, 'send_at' => ($this->local)($at), ...$extra]
+        );
+        $this->bells = fn (User $user, string $type) => Illuminate\Notifications\DatabaseNotification::where('notifiable_id', $user->id)->get()->filter(fn ($bell) => $bell->data['type'] === $type)->values();
+    });
+
+    test('a message is kept with the person time, sent once at its minute as the person, and a later one waits', function () {
+        ($this->slack)();
+        $due   = ($this->schedule)($this->general, 'Morning team', now()->addMinutes(5))->assertCreated()->assertJsonPath('data.state', 'pending')->json('data.id');
+        $later = ($this->schedule)($this->general, 'Afternoon team', now()->addHours(3))->assertCreated()->json('data.id');
+
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+        expect(($this->posts)())->toHaveCount(0);
+
+        $this->travel(6)->minutes();
+        $this->artisan('verba:send-due')->assertSuccessful();
+        $this->artisan('verba:send-due')->assertSuccessful();
+
+        $posts = ($this->posts)();
+        expect($posts)->toHaveCount(1)
+            ->and($posts[0][0]['text'])->toBe('Morning team')
+            ->and($posts[0][0]->header('Authorization')[0])->toBe('Bearer '.$this->token);
+        $sent = App\Models\Chat\StaffMessageSchedule::find($due);
+        expect($sent->state)->toBe('sent')
+            ->and($sent->slackMessage->text)->toBe('Morning team')
+            ->and($sent->slackMessage->user_id)->toBe($this->writer->id)
+            ->and(App\Models\Chat\StaffMessageSchedule::find($later)->state)->toBe('pending');
+    });
+
+    test('overlapping runs and a Send now at the same minute send once; a claimed or cancelled message is never sent', function () {
+        ($this->slack)();
+        $make = fn (string $text, string $state = 'pending') => App\Models\Chat\StaffMessageSchedule::create([
+            'group_id' => $this->group->id, 'user_id' => $this->writer->id, 'slack_channel_id' => $this->general->id, 'text' => $text, 'send_at' => now()->subMinute(), 'state' => $state, 'claimed_at' => $state === 'sending' ? now() : null,
+        ]);
+        $due       = $make('Once only');
+        $claimed   = $make('Claimed elsewhere', 'sending');
+        $cancelled = $make('Changed my mind', 'cancelled');
+
+        expect(App\Actions\Chat\Staff\Scheduled\SendStaffMessageSchedule::run($due))->toBeTrue()
+            ->and(App\Actions\Chat\Staff\Scheduled\SendStaffMessageSchedule::run($due->fresh()))->toBeFalse()
+            ->and(App\Actions\Chat\Staff\Scheduled\SendStaffMessageSchedule::run($claimed))->toBeFalse();
+        actingAs($this->writer)->postJson(route('grp.chat.staff.scheduled.send', ['staffMessageSchedule' => $due->id]))->assertUnprocessable();
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+
+        expect(($this->posts)())->toHaveCount(1)
+            ->and($claimed->fresh()->state)->toBe('sending')
+            ->and($cancelled->fresh()->state)->toBe('cancelled');
+
+        $this->travel(App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::STUCK_MINUTES + 1)->minutes();
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+        expect($claimed->fresh()->state)->toBe('failed')
+            ->and(($this->posts)())->toHaveCount(1);
+    });
+
+    test('a channel archived before the minute fails the message, keeps why and rings the bell without the words', function () {
+        ($this->slack)();
+        $id = ($this->schedule)($this->general, 'Secret plan', now()->addMinutes(2))->assertCreated()->json('data.id');
+        $this->general->update(['is_archived' => true]);
+
+        $this->travel(3)->minutes();
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+
+        $schedule = App\Models\Chat\StaffMessageSchedule::find($id);
+        $bells    = ($this->bells)($this->writer, 'verba_scheduled_failed');
+        expect(($this->posts)())->toHaveCount(0)
+            ->and($schedule->state)->toBe('failed')
+            ->and($schedule->failure_reason)->toBe('Messages cannot be sent to this channel.')
+            ->and($bells)->toHaveCount(1)
+            ->and(json_encode($bells->first()->data))->not->toContain('Secret plan');
+
+        actingAs($this->writer)->getJson(route('grp.chat.staff.scheduled.index'))->assertOk()->assertJsonPath('data.0.state', 'failed');
+        actingAs($this->writer)->deleteJson(route('grp.chat.staff.scheduled.cancel', ['staffMessageSchedule' => $id]))->assertOk()->assertJsonPath('data.state', 'cancelled');
+        actingAs($this->writer)->getJson(route('grp.chat.staff.scheduled.index'))->assertOk()->assertJsonCount(0, 'data');
+    });
+
+    test('scheduling checks the channel, the time and @here at once; edit, cancel and send now are for the author only', function () {
+        ($this->slack)();
+        ($this->schedule)($this->archived, 'Hi', now()->addHour())->assertUnprocessable();
+        ($this->schedule)($this->general, 'Hi', now()->subMinutes(5))->assertUnprocessable()->assertJsonValidationErrors('send_at');
+        ($this->schedule)($this->general, "Look \u{E000}!here\u{E000}", now()->addHour())->assertUnprocessable()->assertJsonValidationErrors('notify_everyone');
+        ($this->schedule)($this->general, 'Hi', now()->addHour(), as: User::factory()->create(['group_id' => $this->group->id, 'language_id' => $this->user->language_id]))->assertUnprocessable();
+
+        $mention = ($this->schedule)($this->general, "Hi \u{E000}@UBOB{$this->s}\u{E000}", now()->addHour())->assertCreated()->assertJsonPath('data.has_mentions', true)->json('data.id');
+        actingAs($this->writer)->patchJson(route('grp.chat.staff.scheduled.update', ['staffMessageSchedule' => $mention]), ['text' => 'Hi Bob', 'send_at' => ($this->local)(now()->addHours(3))])
+            ->assertOk()->assertJsonPath('data.text', fn (string $text) => str_starts_with($text, 'Hi @') && !str_contains($text, "\u{E000}"));
+        expect(App\Models\Chat\StaffMessageSchedule::find($mention)->text)->toBe("Hi \u{E000}@UBOB{$this->s}\u{E000}");
+        actingAs($this->writer)->deleteJson(route('grp.chat.staff.scheduled.cancel', ['staffMessageSchedule' => $mention]))->assertOk();
+
+        $id = ($this->schedule)($this->general, 'Draft', now()->addHour())->assertCreated()->json('data.id');
+        actingAs($this->reader)->patchJson(route('grp.chat.staff.scheduled.update', ['staffMessageSchedule' => $id]), ['text' => 'Hijacked', 'send_at' => ($this->local)(now()->addHours(2))])->assertNotFound();
+        actingAs($this->reader)->deleteJson(route('grp.chat.staff.scheduled.cancel', ['staffMessageSchedule' => $id]))->assertNotFound();
+        actingAs($this->reader)->postJson(route('grp.chat.staff.scheduled.send', ['staffMessageSchedule' => $id]))->assertNotFound();
+
+        actingAs($this->writer)->patchJson(route('grp.chat.staff.scheduled.update', ['staffMessageSchedule' => $id]), ['text' => 'Final', 'send_at' => ($this->local)(now()->addHours(2))])
+            ->assertOk()->assertJsonPath('data.text', 'Final')->assertJsonPath('data.send_at_local', ($this->local)(now()->addHours(2)));
+        actingAs($this->writer)->postJson(route('grp.chat.staff.scheduled.send', ['staffMessageSchedule' => $id]))->assertOk()->assertJsonPath('data.state', 'sent');
+        actingAs($this->writer)->deleteJson(route('grp.chat.staff.scheduled.cancel', ['staffMessageSchedule' => $id]))->assertUnprocessable();
+
+        expect(($this->posts)())->toHaveCount(1)
+            ->and(($this->posts)()[0][0]['text'])->toBe('Final');
+    });
+
+    test('a Verba conversation message is sent through the same send as the box, and not once the person has left', function () {
+        $conversation = App\Actions\Chat\Staff\StoreStaffConversation::run($this->writer, ['user_ids' => [$this->reader->id]]);
+        $id           = ($this->schedule)($conversation, 'See you at nine', now()->addMinutes(2))->assertCreated()->json('data.id');
+        $left         = ($this->schedule)($conversation, 'Still here?', now()->addMinutes(2))->assertCreated()->json('data.id');
+
+        $this->travel(3)->minutes();
+        App\Actions\Chat\Staff\Scheduled\SendStaffMessageSchedule::run(App\Models\Chat\StaffMessageSchedule::find($id));
+        $conversation->removeParticipants([$this->writer->id]);
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+
+        expect(App\Models\Chat\StaffMessageSchedule::find($id)->staffMessage->body)->toBe('See you at nine')
+            ->and(App\Models\Chat\StaffMessageSchedule::find($left)->state)->toBe('failed')
+            ->and($conversation->messages()->where('body', 'Still here?')->exists())->toBeFalse();
+    });
+
+    test('a reminder rings the bell once at its time with a link, and not for a message deleted since', function () {
+        $message = SlackMessage::create(['slack_channel_id' => $this->general->id, 'ts' => '1790000000.000001', 'text' => 'Ship the pallets', 'sent_at' => now()]);
+        $gone    = SlackMessage::create(['slack_channel_id' => $this->general->id, 'ts' => '1790000000.000002', 'text' => 'Old news', 'sent_at' => now()]);
+        $remind  = fn (SlackMessage $message, ?User $as = null) => actingAs($as ?? $this->writer)->postJson(route('grp.chat.staff.slack.reminders.store', ['slackChannel' => $this->general->id]), ['ts' => $message->ts, 'remind_at' => ($this->local)(now()->addHour())]);
+
+        $remind($message)->assertOk()->assertJsonPath('remind_at', ($this->local)(now()->addHour()));
+        $remind($gone)->assertOk();
+        actingAs($this->writer)->postJson(route('grp.chat.staff.slack.reminders.store', ['slackChannel' => $this->private->id]), ['ts' => '1790000000.000001', 'remind_at' => ($this->local)(now()->addHour())])->assertNotFound();
+        $gone->delete();
+
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+        expect(($this->bells)($this->writer, 'verba_message_reminder'))->toHaveCount(0);
+
+        $this->travel(61)->minutes();
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+        App\Actions\Chat\Staff\Scheduled\SendDueStaffMessages::run();
+
+        $bells = ($this->bells)($this->writer, 'verba_message_reminder');
+        expect($bells)->toHaveCount(1)
+            ->and($bells->first()->data['route'])->toBe(SearchSlackMessages::messageUrl($message))
+            ->and(json_encode($bells->first()->data))->not->toContain('Ship the pallets');
+    });
+});

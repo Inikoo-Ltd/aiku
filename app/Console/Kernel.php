@@ -1945,6 +1945,8 @@ class Kernel extends ConsoleKernel
                 scheduledAt: now()->format('H:i')
             );
 
+            $schedule->command('verba:send-due')->everyMinute()->onOneServer()->withoutOverlapping(5);
+
             $this->logSchedule(
                 $schedule->command('slack:sync-public-channels --history --catch-up')->dailyAt('02:40')->timezone('UTC')->onOneServer()->withoutOverlapping(180)->sentryMonitor(
                     monitorSlug: 'SyncSlackPublicChannels',

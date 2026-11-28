@@ -45,6 +45,7 @@ EXCLUDES=(
   location_org_stock_histories org_stock_histories org_stock_movements audits
   failed_jobs
   staff_messages staff_message_reactions staff_message_translations staff_message_stories
+  staff_message_schedules staff_message_reminders
   slack_messages slack_message_reactions slack_message_versions slack_files
   staff_call_recordings staff_call_recording_tracks
 )
