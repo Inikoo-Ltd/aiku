@@ -12,6 +12,7 @@ use Laravel\Passport\ClientRepository;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\post;
 
 beforeAll(function () {
@@ -118,4 +119,22 @@ test('a user with 2FA must enter the code before connecting, whatever the method
         ->outcome->toBe(McpOauthAttemptOutcomeEnum::TWO_FA_REQUIRED);
 
     $this->user->update(['google2fa_secret' => null]);
+});
+
+test('the profile AI access tab lists what the person\'s own assistant can read and change, with prompts to try', function () {
+    $this->user->update(['can_use_mcp_sql' => false, 'can_use_mcp_prices' => true, 'can_use_mcp_discontinue' => false]);
+    actingAs($this->user);
+
+    $access = getJson(route('grp.profile.api-tokens.index'))->assertOk()->json('access');
+
+    $keys = collect($access['abilities'])->pluck('key');
+    expect($access['connected'])->toBeTrue()
+        ->and($access['docs_url'])->toEndWith('/docs/connecting-your-ai-assistant-to-aiku')
+        ->and($keys)->toContain('can_use_mcp', 'can_use_mcp_prices')
+        ->and($keys)->not->toContain('can_use_mcp_sql', 'can_use_mcp_discontinue')
+        ->and(collect($access['abilities'])->firstWhere('key', 'can_use_mcp_prices'))
+        ->writes->toBeTrue()
+        ->examples->not->toBeEmpty();
+
+    $this->user->update(['can_use_mcp_prices' => false]);
 });

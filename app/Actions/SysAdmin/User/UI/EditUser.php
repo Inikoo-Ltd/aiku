@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\User\GetAiAssistantAccess;
 use App\Actions\SysAdmin\User\UI\Traits\HasPermissionsForm;
 use App\Actions\Traits\Authorisations\WithUserPermissionsEditAuthorisation;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -56,7 +57,7 @@ class EditUser extends OrgAction
 
     public function htmlResponse(User $user, ActionRequest $request): Response
     {
-        $assistantHelp = $this->assistantHelp();
+        $assistantHelp = GetAiAssistantAccess::help();
 
         $permissionsData = $this->getPermissionsFormData($user);
 
@@ -369,150 +370,6 @@ class EditUser extends OrgAction
      *
      * @return array<string, array{title: string, items: array<int, string>, note: string}>
      */
-    private function assistantHelp(): array
-    {
-        $confirms = __('Before changing anything it shows what will change and waits for their yes.');
-
-        return [
-            'can_use_mcp'                  => [
-                'title' => __('What their AI assistant can do'),
-                'items' => [
-                    __('Connect an AI assistant to Aiku with their own login.'),
-                    __('Answer questions about sales, products, stock, customers, orders, deliveries, marketing, web traffic, reviews and staff, only in the shops, organisations and warehouses this person can see in Aiku.'),
-                    __('Raise help tickets and comment on the tickets they raised.'),
-                    __('Ask a colleague or a department to do something (a staff task) and follow it up.'),
-                    __('Send a Discord message to a colleague in their name.'),
-                ],
-                'note'  => __('It only reads, unless one of the switches below is on.'),
-            ],
-            'can_use_mcp_sql'              => [
-                'title' => __('Super intelligence'),
-                'items' => [
-                    __('Ask any question of all the data in Aiku, in every shop and organisation, including data this person cannot see in Aiku.'),
-                    __('Read the system records: errors, slow pages and background jobs, and the archived data.'),
-                ],
-                'note'  => __('It only reads: it can never change or delete anything.'),
-            ],
-            'can_use_mcp_discontinue'      => [
-                'title' => __('Discontinue SKOs'),
-                'items' => [
-                    __('Show everything that still depends on a SKO: stock, days of cover, open purchase orders and deliveries, dropshipping customers, marketplace listings, live web pages and open orders.'),
-                    __('Change a SKO to discontinuing, discontinued, suspended or back to active, in every organisation carrying it (or leave some organisations as they are), now or on a future date.'),
-                    __('Stop ordering a SKO from its supplier, for this organisation or for every organisation, or make it orderable again.'),
-                    __('Every change needs a reason, is kept in the AI changes list with their name and request, and can be undone there.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_goods'            => [
-                'title' => __('Edit trade units'),
-                'items' => [
-                    __('Change the name, description, weights, ingredients, country of origin, customs codes and safety codes of a trade unit. The change reaches every product and organisation selling it.'),
-                    __('Give a barcode to a trade unit that has none. It never moves or removes a barcode.'),
-                    __('Every change is kept in the AI changes list with their name and request, and can be undone there.'),
-                    __('Only where this person can edit goods in Aiku.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_prices'           => [
-                'title' => __('Change master prices'),
-                'items' => [
-                    __('Show the master prices of a family or of products, with cost, units per outer and recent changes by hand.'),
-                    __('Save new master prices in the main currencies. The other currencies follow the exchange rate, except prices set by hand.'),
-                    __('Every shop following the master sells at the new price.'),
-                    __('A price that more than doubles or drops by more than 60% is refused unless they say it is meant.'),
-                    __('Put master products on pre-order (back-order or made-to-order) and set their lead time, deposit and maximum per order, in every shop following the master.'),
-                    __('Every change is kept in the AI changes list with their name and request, and can be undone there.'),
-                    __('Only where this person can edit the master catalogue in Aiku.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_web'              => [
-                'title' => __('Change website content and redirects'),
-                'items' => [
-                    __('Show and replace the related products ("Sells well with") of a family. When the shop follows the master catalogue the change is made on the master family and reaches every shop following it.'),
-                    __('Point the redirects of closed pages to another live page of the same website, up to 25 at a time, after showing each old address with where it goes now and where it will go.'),
-                    __('Every change is kept in the AI changes list with their name and request, and can be undone there.'),
-                    __('Only where this person can edit products, the master catalogue or the website in Aiku.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_procurement'      => [
-                'title' => __('Add to the manufacturing hub shopping list'),
-                'items' => [
-                    __('Show what to order from the hub: stock, sales, days until it runs out, the recommended quantity and the batch size.'),
-                    __('Add SKOs and change quantities on the shopping list as drafts. Quantities are raised to whole production batches.'),
-                    __('The hub only sees the list once someone sends it.'),
-                    __('Only for the organisations where this person can edit procurement in Aiku.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_place_orders'     => [
-                'title' => __('Place orders'),
-                'items' => [
-                    __('Send the shopping list to the manufacturing hub, which starts producing it, and change lines the hub has not started yet.'),
-                    __('Place rescue orders with the other partners, whose warehouse starts picking at once.'),
-                    __('Place purchase orders with suppliers, including those bought through an agent, rounded to whole cartons. They are not emailed: that is done from the purchase order page.'),
-                    __('Only where this person can edit procurement in Aiku.'),
-                ],
-                'note'  => __('Orders spend money and cannot be undone from the AI changes list. Before placing one it shows the order and waits for their yes.'),
-            ],
-            'can_use_mcp_costing'          => [
-                'title' => __('Save stock delivery costs'),
-                'items' => [
-                    __('Show the costs of a stock delivery and which are still missing.'),
-                    __('Save shipping, duty and extra expenses with amount, currency and note, mark a cost as not applicable, or as waiting for its invoice with an estimate.'),
-                    __('These costs decide the value of the stock put away and the margins.'),
-                    __('Every change is kept in the AI changes list and can be undone there until the delivery is costed.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_locations'        => [
-                'title' => __('Put SKOs on locations'),
-                'items' => [
-                    __('Show the locations of SKOs.'),
-                    __('Add SKOs to warehouse locations of the same organisation, many at a time, after showing what will be added and what is refused.'),
-                    __('It never moves stock, changes a quantity or takes a SKO off a location.'),
-                    __('Every change is kept in the AI changes list with their name and request, and can be undone there while the location is still empty.'),
-                    __('Only where this person can edit stock in Aiku.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_production'       => [
-                'title' => __('Set up production'),
-                'items' => [
-                    __('Create and edit artefacts (with their SKO, or a new SKO made for them), raw materials with their cost, and manufacture tasks.'),
-                    __('Replace the recipe of artefacts: the steps in order, units per artefact, target per hour and the raw materials each step uses, with the materials cost.'),
-                    __('Job orders not yet received follow the new steps.'),
-                    __('Set the factory location, and create work areas with the product departments made there and the artisans who work there (production managers only).'),
-                    __('Every change is kept in the AI changes list with their name and request, and can be undone there.'),
-                ],
-                'note'  => $confirms,
-            ],
-            'can_use_mcp_customer_service' => [
-                'title' => __('Serve customers'),
-                'items' => [
-                    __('List the chats waiting on them, and open a chat with the customer, their orders, the language to answer in and the shop\'s rules.'),
-                    __('Write draft replies for them to check and send from Aiku.'),
-                    __('Reply to the customer in their name, take, close or pause a chat, and link it to a customer.'),
-                    __('Settle a claim: credit the customer\'s balance, send a replacement, or add the items free to the next order.'),
-                    __('Change an order not yet packed: delivery address, notes, and add, remove or change products.'),
-                    __('Only in the shops where this person works in customer service.'),
-                ],
-                'note'  => __('Drafts need no yes. Everything else is shown first and waits for their yes. What was sent or given to a customer cannot be undone from the AI changes list.'),
-            ],
-            'can_use_mcp_settings'         => [
-                'title' => __('Change who gets Ask CRM and Ask warehouse questions'),
-                'items' => [
-                    __('Show who receives Ask CRM and Ask warehouse questions, and their backups, in each shop and in the organisation.'),
-                    __('Add or remove staff on those lists in one shop, or in every shop of an organisation at once.'),
-                    __('Every change is kept in the AI changes list with their name and request, and can be undone there.'),
-                    __('Only in the shops and organisations where this person is an admin in Aiku.'),
-                ],
-                'note'  => $confirms,
-            ],
-        ];
-    }
-
     private function hasLeft(User $user): bool
     {
         return !$user->status && Employee::where('user_id', $user->id)

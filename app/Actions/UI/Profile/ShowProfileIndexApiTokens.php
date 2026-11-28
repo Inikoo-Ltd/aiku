@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\SysAdmin\User\GetAiAssistantAccess;
 use App\Actions\OrgAction;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
 use App\Models\SysAdmin\User;
@@ -33,7 +34,8 @@ class ShowProfileIndexApiTokens extends OrgAction
     public function jsonResponse(User $user): array
     {
         return [
-            'tokens' => $user->tokens()->orderByDesc('id')->get(['id', 'name', 'last_used_at', 'created_at'])->toArray()
+            'tokens' => $user->tokens()->orderByDesc('id')->get(['id', 'name', 'last_used_at', 'created_at'])->toArray(),
+            'access' => GetAiAssistantAccess::run($user),
         ];
     }
 }

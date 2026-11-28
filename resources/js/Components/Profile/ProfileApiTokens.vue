@@ -7,9 +7,9 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faKey, faCopy, faTrashAlt } from '@fal'
+import { faKey, faCopy, faTrashAlt, faBookOpen, faEye, faPencil, faCheck } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-library.add(faKey, faCopy, faTrashAlt)
+library.add(faKey, faCopy, faTrashAlt, faBookOpen, faEye, faPencil, faCheck)
 
 interface ApiToken {
     id: number
@@ -18,11 +18,27 @@ interface ApiToken {
     created_at: string
 }
 
+interface AiAbility {
+    key: string
+    title: string
+    items: string[]
+    note: string | null
+    examples: string[]
+    writes: boolean
+}
+
 const props = defineProps<{
     data: {
         tokens: ApiToken[]
+        access: {
+            connected: boolean
+            docs_url: string
+            abilities: AiAbility[]
+        }
     }
 }>()
+
+const canChange = props.data.access.abilities.some(ability => ability.writes)
 
 const tokens = ref<ApiToken[]>(props.data.tokens || [])
 const newTokenName = ref('')
@@ -97,8 +113,13 @@ const onCopySnippet = (key: string, text: string) => {
         <div class="space-y-3">
             <h2 class="text-lg font-semibold">{{ ctrans('Connect Aiku to your AI assistant') }}</h2>
             <p class="text-sm text-gray-600">
-                {{ ctrans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku, and it can never change anything.') }}
+                {{ ctrans('This lets your AI assistant answer questions using Aiku data, for example "What were the sales in my shop last month?". It can only see what you can see in Aiku.') }}
+                {{ canChange ? ctrans('It can change only what is listed under What your assistant can do, and it shows you the change and waits for your yes first.') : ctrans('It can never change anything.') }}
             </p>
+            <a :href="data.access.docs_url" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:underline">
+                <FontAwesomeIcon icon="fal fa-book-open" fixed-width aria-hidden="true" />
+                {{ ctrans('Full guide: connecting, what it can do and ideas to try') }}
+            </a>
             <p class="text-sm text-gray-600">
                 {{ ctrans('You only need the address below. Your assistant will ask you to sign in to Aiku and approve it — no key to copy. (Perplexity is the exception: it asks for a key, see Access keys at the bottom.)') }}
             </p>
@@ -177,8 +198,45 @@ const onCopySnippet = (key: string, text: string) => {
             </details>
 
             <p class="text-xs text-gray-500">
-                {{ ctrans('Your AI can only read Aiku, it can never change or delete anything. It sees exactly what you can see, nothing more.') }}
+                {{ ctrans('If connecting fails, close the Aiku page and click Connect again in your assistant. Use your own Aiku login, never a colleague\'s.') }}
             </p>
+        </div>
+
+        <div class="space-y-3">
+            <h2 class="text-lg font-semibold">{{ ctrans('What your assistant can do') }}</h2>
+            <p class="text-sm text-gray-600">
+                {{ ctrans('An administrator decides this on your user. Ask your manager if your work needs more.') }}
+            </p>
+
+            <details v-for="ability in data.access.abilities" :key="ability.key" class="rounded-md border border-gray-200" :open="ability.key === 'can_use_mcp'">
+                <summary class="flex cursor-pointer select-none items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-gray-50">
+                    <FontAwesomeIcon :icon="ability.writes ? 'fal fa-pencil' : 'fal fa-eye'" fixed-width aria-hidden="true" class="text-gray-400" />
+                    {{ ability.title }}
+                    <span v-if="ability.writes" class="whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-normal text-amber-700">{{ ctrans('Can change') }}</span>
+                </summary>
+                <div class="space-y-3 px-4 pb-4 pt-1 text-sm text-gray-600">
+                    <ul class="list-disc space-y-1 pl-5">
+                        <li v-for="item in ability.items" :key="item">{{ item }}</li>
+                    </ul>
+                    <p v-if="ability.note" class="text-xs text-gray-500">{{ ability.note }}</p>
+                    <div>
+                        <p class="mb-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Try asking') }}</p>
+                        <div class="flex flex-col gap-1.5">
+                            <button
+                                v-for="example in ability.examples"
+                                :key="example"
+                                type="button"
+                                class="group flex items-start justify-between gap-2 rounded-md bg-gray-50 px-3 py-2 text-left italic text-gray-700 hover:bg-gray-100"
+                                v-tooltip="ctrans('Copy')"
+                                @click="onCopySnippet(example, example)"
+                            >
+                                <span>“{{ example }}”</span>
+                                <FontAwesomeIcon :icon="copiedSnippet === example ? 'fal fa-check' : 'fal fa-copy'" fixed-width aria-hidden="true" class="mt-0.5 text-gray-400 group-hover:text-gray-600" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </details>
         </div>
 
             <details class="rounded-md border border-gray-200 mt-6">
