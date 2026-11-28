@@ -396,7 +396,7 @@ class AskShoppingAssistant
         }
 
         $known = $offerReason && $customer && !$turn['cleared']
-            ? $this->knownPart($conversation, $message, $reply, $turn, $flags, $offerReason)
+            ? $this->knownPart($message, $reply, $turn, $flags, $offerReason)
             : null;
         $withKnown = fn (string $sentence) => $known ? $known."\n\n".$sentence : $sentence;
         $previous  = $offerReason ? $conversation->messages()->where('id', '<', $customerMessage->id)->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->orderByDesc('id')->first() : null;
@@ -1326,9 +1326,8 @@ class AskShoppingAssistant
      * @param  array<string, mixed>  $turn
      * @param  array<int, string>  $flags
      */
-    private function knownPart(ShoppingAssistantConversation $conversation, string $question, string $draft, array $turn, array &$flags, ShoppingAssistantHandOverReasonEnum $reason): ?string
+    private function knownPart(string $question, string $draft, array $turn, array &$flags, ShoppingAssistantHandOverReasonEnum $reason): ?string
     {
-        $written  = $draft;
         $draft    = $this->withoutHandOverClaims(trim($draft));
         $evidence = $turn['evidence'] ?? [];
 
@@ -1352,14 +1351,6 @@ class AskShoppingAssistant
 
         if ($confidence !== null) {
             $flags[] = 'partial_answer_refused';
-            Log::info('Merlin partial answer refused', [
-                'conversation_id' => $conversation->id,
-                'confidence'      => $confidence,
-                'question'        => $question,
-                'written'         => $written,
-                'checked'         => $draft,
-                'evidence_chars'  => mb_strlen(implode("\n\n", $evidence)),
-            ]);
         }
 
         return null;

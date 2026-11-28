@@ -49,7 +49,6 @@ use App\Models\SysAdmin\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Inertia\Testing\AssertableInertia;
 use App\Models\Web\Website;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -5029,15 +5028,11 @@ test('a not sure answer at the order bar is still refused', function () {
     expect($notSure['message']->flags)->toContain('partial_answer_refused');
 });
 
-test('a not sure answer Jev doubts stays the fixed sentence alone, and the draft and its confidence are logged', function () {
-    Log::spy();
+test('a not sure answer Jev doubts stays the fixed sentence alone', function () {
     $turn = shoppingAssistantNotSureTurn($this, 'Orders placed by mid December always arrive before Christmas. Dispatch takes a few working days.', 0.4);
 
     expect($turn['message']->flags)->toContain('partial_answer_refused')
         ->and($turn['message']->body)->not->toContain('mid December');
-    Log::shouldHaveReceived('info')->with('Merlin partial answer refused', Mockery::on(fn (array $context) => $context['confidence'] === 0.4
-        && $context['conversation_id'] === $turn['message']->shopping_assistant_conversation_id
-        && str_contains($context['checked'], 'mid December')))->once();
 });
 
 test('the page the customer asks from reaches the prompt only when it is a live page of that website', function () {
