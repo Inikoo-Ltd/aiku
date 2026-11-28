@@ -10,7 +10,7 @@ import { Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { formatDistanceToNow } from "date-fns"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck, faLock } from "@fal"
+import { faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck, faLock, faSearch, faCommentDots, faPalette } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import Image from "@/Common/Components/Image.vue"
@@ -22,7 +22,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useStaffCalls, type StaffCallKind } from "@/Stores/staff-calls"
 import { readCachedHome, writeCachedHome } from "@/Composables/useStaffChatCache"
 
-library.add(faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck, faLock)
+library.add(faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck, faLock, faSearch, faCommentDots, faPalette)
 
 interface Story {
     id: number
@@ -54,6 +54,7 @@ const emit = defineEmits<{ newVerb: []; newVerbration: []; privateOptIn: [] }>()
 const calls = useStaffCalls()
 const stories = ref<Story[]>([])
 const people = ref<Person[]>([])
+const starred = ref<Person[]>([])
 const isLoading = ref(true)
 
 const categoryIcon: Record<string, string> = {
@@ -150,21 +151,71 @@ const onSearch = () => {
     }, 250)
 }
 
-const callCoworker = async (userId: number) => {
-    const kind = pickKind.value ?? "voice"
-    pickKind.value = null
+const conversationWith = async (userId: number): Promise<string> => {
     const { data } = await axios.post(route("grp.chat.staff.conversations.store"), { user_ids: [userId] })
-    calls.start(data.data.ulid, kind)
+    return data.data.ulid
 }
+
+const peopleError = ref<string | null>(null)
+const busyPerson = ref<number | null>(null)
+const withPerson = async (userId: number, action: (ulid: string) => void) => {
+    if (busyPerson.value !== null) return
+    busyPerson.value = userId
+    peopleError.value = null
+    try {
+        action(await conversationWith(userId))
+    } catch {
+        peopleError.value = ctrans("That did not work. Try again.")
+    } finally {
+        busyPerson.value = null
+    }
+}
+
+const callCoworker = (userId: number, kind?: StaffCallKind) => {
+    const callKind = kind ?? pickKind.value ?? "voice"
+    pickKind.value = null
+    return withPerson(userId, (ulid) => calls.start(ulid, callKind))
+}
+
+const messageCoworker = (userId: number) => withPerson(userId, (ulid) => router.visit(route("grp.chat.staff.show", ulid)))
+
+const peopleQuery = ref("")
+const peopleFound = ref<{ id: number; name: string; avatar: object | null }[] | null>(null)
+let peopleTimeout: ReturnType<typeof setTimeout> | null = null
+const searchPeople = () => {
+    if (peopleTimeout) clearTimeout(peopleTimeout)
+    const typed = peopleQuery.value.trim()
+    if (typed.length < 2) {
+        peopleFound.value = null
+        return
+    }
+    peopleTimeout = setTimeout(async () => {
+        try {
+            const { data } = await axios.get(route("grp.chat.staff.coworkers.index"), { params: { q: typed } })
+            if (peopleQuery.value.trim() === typed) {
+                peopleFound.value = data.data.slice(0, 12)
+                peopleError.value = null
+            }
+        } catch {
+            peopleError.value = ctrans("The search did not work. Try again.")
+        }
+    }, 250)
+}
+const recentPeople = computed(() => {
+    const starredUlids = new Set(starred.value.map((person) => person.conversation_ulid))
+    return people.value.filter((person) => !starredUlids.has(person.conversation_ulid))
+})
 
 interface Home {
     stories: Story[]
     people: Person[]
+    starred?: Person[]
 }
 
 const showHome = (home: Home) => {
     stories.value = home.stories ?? []
     people.value = home.people ?? []
+    starred.value = home.starred ?? []
     isLoading.value = false
 }
 
@@ -204,8 +255,8 @@ const createMeetingLink = async () => {
 </script>
 
 <template>
-    <div class="flex-1 overflow-y-auto bg-gray-50 font-desk">
-        <div class="mx-auto max-w-6xl px-4 sm:px-6 pt-8 pb-12">
+    <div class="flex h-full flex-1 flex-col overflow-y-auto bg-gray-50 font-desk">
+        <div class="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 pt-8 pb-12">
             <header>
                 <div class="text-xs font-medium uppercase tracking-wider text-gray-500">{{ today }}</div>
                 <h1 class="mt-1 text-2xl font-semibold text-gray-900">{{ greeting }}</h1>
@@ -371,26 +422,66 @@ const createMeetingLink = async () => {
 
                 <aside class="space-y-4">
                     <section class="rounded-xl border border-gray-200 bg-white p-4">
-                        <h2 class="mb-2 text-sm font-semibold text-gray-900">{{ ctrans("Recent chats") }}</h2>
-                        <div v-if="isLoading" class="space-y-2">
-                            <div v-for="n in 4" :key="n" class="skeleton h-9 rounded" />
+                        <h2 class="mb-2 text-sm font-semibold text-gray-900">{{ ctrans("People") }}</h2>
+                        <span class="relative block">
+                            <FontAwesomeIcon icon="fal fa-search" class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400" fixed-width aria-hidden="true" />
+                            <InputText v-model="peopleQuery" class="w-full !pl-8" size="small" :placeholder="ctrans('Find anyone in the company')" :aria-label="ctrans('Find anyone in the company')" @input="searchPeople" />
+                        </span>
+
+                        <p v-if="peopleError" class="mt-2 text-xs text-red-600" role="alert">{{ peopleError }}</p>
+                        <div v-if="peopleFound !== null" class="mt-2">
+                            <p v-if="!peopleFound.length" class="py-2 text-sm text-gray-400">{{ ctrans("Nobody found") }}</p>
+                            <div v-for="person in peopleFound" :key="'found-' + person.id" class="-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50">
+                                <button type="button" class="flex min-w-0 flex-1 items-center gap-3 text-left" :title="ctrans('Message :name', { name: person.name })" @click="messageCoworker(person.id)">
+                                    <span class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gray-100"><Image v-if="person.avatar" :src="person.avatar" :alt="person.name" image-cover /></span>
+                                    <span class="truncate text-sm font-medium text-gray-800">{{ person.name }}</span>
+                                </button>
+                                <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Message :name', { name: person.name })" @click="messageCoworker(person.id)">
+                                    <FontAwesomeIcon icon="fal fa-comment-dots" fixed-width aria-hidden="true" />
+                                </button>
+                                <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Call :name', { name: person.name })" @click="callCoworker(person.id, 'voice')">
+                                    <FontAwesomeIcon icon="fal fa-phone" fixed-width aria-hidden="true" />
+                                </button>
+                                <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Video call :name', { name: person.name })" @click="callCoworker(person.id, 'video')">
+                                    <FontAwesomeIcon icon="fal fa-video" fixed-width aria-hidden="true" />
+                                </button>
+                            </div>
                         </div>
-                        <p v-else-if="!people.length" class="text-sm text-gray-400">{{ ctrans("People you message will show here") }}</p>
-                        <div v-for="person in people" :key="person.conversation_ulid" class="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-gray-50">
-                            <Link :href="route('grp.chat.staff.show', person.conversation_ulid)" class="flex min-w-0 flex-1 items-center gap-3">
-                                <span class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gray-100"><Image v-if="person.avatar" :src="person.avatar" :alt="person.name" image-cover /></span>
-                                <span class="truncate text-sm font-medium text-gray-800">{{ person.name }}</span>
-                            </Link>
-                            <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Call :name', { name: person.name })" @click="call(person, 'voice')">
-                                <FontAwesomeIcon icon="fal fa-phone" fixed-width aria-hidden="true" />
-                            </button>
-                            <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Video call :name', { name: person.name })" @click="call(person, 'video')">
-                                <FontAwesomeIcon icon="fal fa-video" fixed-width aria-hidden="true" />
-                            </button>
-                        </div>
+
+                        <template v-else>
+                            <div v-if="isLoading" class="mt-3 space-y-2">
+                                <div v-for="n in 4" :key="n" class="skeleton h-9 rounded" />
+                            </div>
+                            <template v-else>
+                                <template v-for="group in [{ key: 'starred', title: ctrans('Starred'), list: starred }, { key: 'recent', title: ctrans('Recent'), list: recentPeople }]" :key="group.key">
+                                    <template v-if="group.list.length">
+                                        <h3 class="mb-1 mt-3 text-xs font-medium text-gray-500">{{ group.title }}</h3>
+                                        <div v-for="person in group.list" :key="group.key + person.conversation_ulid" class="-mx-2 flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-gray-50">
+                                            <Link :href="route('grp.chat.staff.show', person.conversation_ulid)" class="flex min-w-0 flex-1 items-center gap-3">
+                                                <span class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gray-100"><Image v-if="person.avatar" :src="person.avatar" :alt="person.name" image-cover /></span>
+                                                <span class="truncate text-sm font-medium text-gray-800">{{ person.name }}</span>
+                                            </Link>
+                                            <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Call :name', { name: person.name })" @click="call(person, 'voice')">
+                                                <FontAwesomeIcon icon="fal fa-phone" fixed-width aria-hidden="true" />
+                                            </button>
+                                            <button type="button" class="grid h-7 w-7 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-white hover:text-[var(--app-accent)] hover:ring-1 hover:ring-gray-200" :title="ctrans('Video call :name', { name: person.name })" @click="call(person, 'video')">
+                                                <FontAwesomeIcon icon="fal fa-video" fixed-width aria-hidden="true" />
+                                            </button>
+                                        </div>
+                                    </template>
+                                </template>
+                                <p v-if="!starred.length && !recentPeople.length" class="mt-3 text-sm text-gray-400">{{ ctrans("People you message will show here") }}</p>
+                            </template>
+                        </template>
                     </section>
+
                 </aside>
             </div>
+        </div>
+        <div v-if="!tab" class="sticky bottom-0 flex bg-gray-50/90 px-4 py-3 backdrop-blur-sm sm:px-6">
+            <Link :href="route('grp.profile.edit', { section: 'verba' })" class="flex items-center gap-2 px-1 text-sm text-gray-500 hover:text-gray-800">
+                <FontAwesomeIcon icon="fal fa-palette" fixed-width aria-hidden="true" />{{ ctrans("Default look and feel") }}
+            </Link>
         </div>
     </div>
 </template>

@@ -128,3 +128,17 @@ test('the login watercolour can be chosen, and every pattern has its picture, IN
         expect(file_exists(resource_path("js/Components/Messaging/wallpapers/$pattern.svg")))->toBeTrue();
     }
 });
+
+test('Verba look and feel holds the sidebar colour, wallpaper and the more room switch, which starts on and is saved when turned off, INI-598 INI-599', function () {
+    $this->user->update(['settings' => [...($this->user->settings ?? []), 'chat_theme' => 'nord', 'verba_more_room' => null]]);
+
+    $verba = collect(\App\Actions\UI\Profile\EditProfileSettings::make()->generateBlueprint($this->user->fresh())['formData']['blueprint'])->firstWhere('key', 'verba');
+    expect($verba['fields']['chat_wallpaper']['sidebar_colour'])->toBe('nord')
+        ->and($verba['fields']['verba_more_room']['value'])->toBeTrue()
+        ->and(GetLoggedUser::run($this->user->fresh())['settings']['verba_more_room'])->toBeTrue();
+
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['verba_more_room' => false])->assertSuccessful();
+    expect(GetLoggedUser::run($this->user->fresh())['settings']['verba_more_room'])->toBeFalse();
+
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['verba_more_room' => 'sometimes'])->assertUnprocessable();
+});

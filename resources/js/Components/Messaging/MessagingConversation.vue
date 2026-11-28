@@ -744,6 +744,7 @@ const onReactionPick = (emoji: string) => {
             <ChatWallpaperButton
                 v-if="!embedded"
                 :conversation-ulid="conversation.ulid"
+                :for-name="displayName"
                 :wallpaper="conversation.wallpaper"
                 :is-set="!!conversation.wallpaper_is_set"
                 :button-class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"

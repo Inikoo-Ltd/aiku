@@ -68,6 +68,22 @@ const StaffHelpBar = defineAsyncComponent(() => import("@/Components/Messaging/H
 
 const layout = useLayoutStore()
 const isVerbaRoute = computed(() => (layout.currentRoute ?? "").startsWith("grp.chat.staff."))
+const verbaFoldsBars = computed(() => isVerbaRoute.value && (usePage().props as any).auth?.user?.settings?.verba_more_room !== false)
+let barsBeforeVerba: { left: boolean; right: boolean; micro: boolean } | null = null
+const foldBarsForVerba = (folding: boolean) => {
+    if (folding && !barsBeforeVerba) {
+        barsBeforeVerba = { left: layout.leftSidebar.show, right: layout.messagingSidebar.show, micro: !!layout.messagingSidebar.micro }
+        layout.leftSidebar.show = false
+        layout.messagingSidebar.show = false
+    } else if (!folding && barsBeforeVerba) {
+        layout.leftSidebar.show = barsBeforeVerba.left
+        layout.messagingSidebar.show = barsBeforeVerba.right
+        layout.messagingSidebar.micro = barsBeforeVerba.micro
+        barsBeforeVerba = null
+    }
+}
+onMounted(() => foldBarsForVerba(verbaFoldsBars.value))
+watch(verbaFoldsBars, foldBarsForVerba)
 const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)

@@ -57,6 +57,9 @@ class UpdateProfile extends OrgAction
             $modelData['nickname'] = $nickname === '' ? null : $nickname;
         }
 
+        if (Arr::exists($modelData, 'verba_more_room')) {
+            $modelData['settings']['verba_more_room'] = (bool) Arr::pull($modelData, 'verba_more_room');
+        }
         if (Arr::exists($modelData, 'hide_logo')) {
             $hideLogo                           = Arr::pull($modelData, 'hide_logo');
             $modelData['settings']['hide_logo'] = $hideLogo;
@@ -314,6 +317,7 @@ class UpdateProfile extends OrgAction
             'org_themes.themes.*.colour'          => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
+            'verba_more_room'   => ['sometimes', 'boolean'],
             'chat_auto_translate' => ['sometimes', 'boolean'],
             'chat_wallpaper'         => ['sometimes', 'array'],
             'chat_wallpaper.pattern' => ['sometimes', 'string', Rule::in([StaffChatWallpaper::NONE, ...array_filter(array_keys(StaffChatWallpaper::PATTERNS), fn (string $pattern) => StaffChatWallpaper::isOffered($pattern))])],

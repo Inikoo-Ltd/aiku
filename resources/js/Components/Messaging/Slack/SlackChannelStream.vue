@@ -385,7 +385,7 @@ const updateListing = (isListed: boolean) => {
                             </template>
                         </div>
                     </div>
-                    <ChatWallpaperButton :slack-channel-id="channel.id" :wallpaper="channel.wallpaper" :is-set="!!channel.wallpaper_is_set" @saved="onWallpaperSaved" />
+                    <ChatWallpaperButton :slack-channel-id="channel.id" :for-name="channel.is_direct || channel.is_private ? channel.name : '#' + (channel.name ?? '')" :wallpaper="channel.wallpaper" :is-set="!!channel.wallpaper_is_set" @saved="onWallpaperSaved" />
                     <SlackChannelMenu v-if="write?.allowed && !write.direct && !channel.is_private && !channel.is_archived" :channel="channel" :write="write" />
                     <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[var(--vx-head-muted,#616061)] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>

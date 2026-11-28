@@ -564,9 +564,8 @@ onUnmounted(() => {
 
     <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh_-_2.75rem_-_var(--desk-footer,0px))] lg:h-[calc(100dvh_-_2.5rem_-_var(--desk-footer,0px))] font-desk text-[15px]" :style="{ '--desk-footer': footerHeight + 'px' }">
         <div
-            v-if="!isFeed"
             class="relative shrink-0 bg-[var(--desk-sidebar)] md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out"
-            :class="[selectedUlid || showSlackChannel ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
+            :class="[selectedUlid || showSlackChannel || isFeed ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
             <nav
                 class="flex h-full w-full md:w-64 flex-col bg-[var(--desk-sidebar)] text-[var(--desk-text)] md:transition-opacity md:duration-200"
                 :class="isSidebarCollapsed && 'md:pointer-events-none md:opacity-0'"
@@ -890,7 +889,6 @@ onUnmounted(() => {
         </div>
 
         <button
-            v-if="!isFeed"
             type="button"
             class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-[var(--desk-strong)] md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"

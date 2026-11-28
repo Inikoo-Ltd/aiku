@@ -12,6 +12,7 @@ use App\Actions\Chat\Staff\Slack\GetSlackMessageFiles;
 use App\Models\Chat\StaffConversation;
 use App\Models\Chat\StaffMessageStory;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -32,7 +33,7 @@ class GetStaffHome
     public const int QUICK_MINUTES = 90;
 
     /**
-     * @return array{stories: list<array<string, mixed>>, people: list<array<string, mixed>>}
+     * @return array{stories: list<array<string, mixed>>, people: list<array<string, mixed>>, starred: list<array<string, mixed>>}
      */
     public function handle(User $user): array
     {
@@ -69,6 +70,7 @@ class GetStaffHome
                 'happened_at' => $story->happened_at,
             ])->values()->all(),
             'people'  => $this->recentPeople($user),
+            'starred' => $this->starredPeople($user),
         ];
     }
 
@@ -77,12 +79,35 @@ class GetStaffHome
      */
     private function recentPeople(User $user): array
     {
-        return StaffConversation::query()
-            ->where('type', 'dm')
-            ->whereHas('activeParticipants', fn ($query) => $query->where('users.id', $user->id))
+        return $this->people($user, StaffConversation::query()
             ->whereNotNull('last_message_at')
             ->orderByDesc('last_message_at')
-            ->limit(self::PEOPLE)
+            ->limit(self::PEOPLE));
+    }
+
+    /**
+     * The people of the DMs this person starred in Verba (desk_starred "dm-{ulid}", INI-598), by name.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function starredPeople(User $user): array
+    {
+        $ulids = collect(Arr::get($user->settings, 'desk_starred') ?? [])
+            ->filter(fn ($key) => is_string($key) && str_starts_with($key, 'dm-'))
+            ->map(fn (string $key) => substr($key, 3))
+            ->values()->all();
+
+        return $ulids === [] ? [] : collect($this->people($user, StaffConversation::query()->whereIn('ulid', $ulids)->limit(50)))->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function people(User $user, \Illuminate\Database\Eloquent\Builder $query): array
+    {
+        return $query
+            ->where('type', 'dm')
+            ->whereHas('activeParticipants', fn ($query) => $query->where('users.id', $user->id))
             ->with('participants')
             ->get()
             ->map(function (StaffConversation $conversation) use ($user) {
@@ -100,7 +125,7 @@ class GetStaffHome
     }
 
     /**
-     * @return array{stories: list<array<string, mixed>>, people: list<array<string, mixed>>}
+     * @return array{stories: list<array<string, mixed>>, people: list<array<string, mixed>>, starred: list<array<string, mixed>>}
      */
     public function asController(ActionRequest $request): array
     {

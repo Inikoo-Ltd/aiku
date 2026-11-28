@@ -11,13 +11,13 @@ import axios from "axios"
 import { Popover } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFillDrip, faUndo } from "@fal"
+import { faPalette, faUndo } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatWallpaperPicker from "@/Components/Messaging/ChatWallpaperPicker.vue"
 import type { ChatWallpaper, ChatWallpaperCatalogue } from "@/Components/Messaging/chatWallpaper"
 
-library.add(faFillDrip, faUndo)
+library.add(faPalette, faUndo)
 
 const props = defineProps<{
     conversationUlid?: string
@@ -25,7 +25,10 @@ const props = defineProps<{
     wallpaper: ChatWallpaper | null | undefined
     isSet: boolean
     buttonClass?: string
+    forName?: string | null
 }>()
+
+const title = computed(() => (props.forName ? ctrans("Wallpaper for :name", { name: props.forName }) : ctrans("Wallpaper for this chat")))
 
 const emit = defineEmits<{ saved: [wallpaper: ChatWallpaper, isSet: boolean] }>()
 
@@ -79,17 +82,17 @@ const useGeneral = async () => {
     <button
         v-if="catalogue"
         type="button"
-        v-tooltip="ctrans('Wallpaper for this chat')"
-        :aria-label="ctrans('Wallpaper for this chat')"
+        v-tooltip="title"
+        :aria-label="title"
         class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200"
         :class="buttonClass ?? 'text-gray-600 hover:bg-gray-100'"
         @click="open">
-        <FontAwesomeIcon icon="fal fa-fill-drip" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon icon="fal fa-palette" fixed-width aria-hidden="true" />
         <span v-if="hasNewSeason" class="absolute right-1 top-1 h-2 w-2 rounded-full bg-[var(--app-accent)]" :aria-label="ctrans('New wallpaper')" />
     </button>
     <Popover v-if="catalogue" ref="popover">
         <div class="w-72 space-y-3 text-left">
-            <div class="text-sm font-semibold text-gray-700">{{ ctrans("Wallpaper for this chat") }}</div>
+            <div class="truncate text-sm font-semibold text-gray-700">{{ title }}</div>
             <div class="text-xs text-gray-500">{{ ctrans("Only you see it. It helps you tell at a glance who you are writing to.") }}</div>
             <ChatWallpaperPicker
                 :pattern="pattern"
@@ -99,7 +102,7 @@ const useGeneral = async () => {
                 @update:pattern="(value) => { pattern = value; choose() }"
                 @update:colour="(value) => { colour = value; choose() }" />
             <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
-            <Button v-if="isSet" type="tertiary" size="xs" :label="ctrans('Use my general one')" @click="useGeneral">
+            <Button v-if="isSet" type="tertiary" size="xs" :label="ctrans('Use my default')" @click="useGeneral">
                 <template #icon><FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" /></template>
             </Button>
         </div>

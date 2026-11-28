@@ -15,13 +15,14 @@ import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { isNavigationActive } from "@/Composables/useUrl"
-import { Link } from "@inertiajs/vue3"
+import { Link, usePage } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 
 library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faParachuteBox)
 
 const layout = inject("layout", layoutStructure)
+const isFoldedForVerba = computed(() => (layout.currentRoute ?? "").startsWith("grp.chat.staff.") && (usePage().props as any).auth?.user?.settings?.verba_more_room !== false)
 
 // Set the LeftSidebar value to local storage
 const handleToggleLeftBar = () => {
@@ -142,6 +143,7 @@ onBeforeUnmount(() => bottomLinksObserver?.disconnect())
         id="leftSidebar">
         <!-- Toggle: collapse-expand LeftSideBar -->
         <div
+            v-if="!isFoldedForVerba"
             @click="handleToggleLeftBar"
             class="hidden absolute z-10 right-0 -translate-y-1/2 translate-x-1/2 w-8 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
             :class="layout.hasTopBanner ? 'top-[calc(50dvh-2.75rem)] lg:top-[calc(50dvh-4rem)]' : 'top-[calc(50dvh-2.75rem)] lg:top-[calc(50dvh-2.5rem)]'"

@@ -98,6 +98,34 @@ class EditProfileSettings
                         ],
                     ],
                     [
+                        "key"    => "verba",
+                        "label"  => __("Verba look and feel"),
+                        "icon"   => "fal fa-palette",
+                        "fields" => [
+                            "chat_wallpaper" => [
+                                "type"        => "chat_wallpaper",
+                                "noSaveButton" => true,
+                                "noTitle"        => true,
+                                "sidebar_colour" => Arr::get($user->settings, 'chat_theme', 'classic'),
+                                "label"       => __("Wallpaper"),
+                                "information" => __("The background behind your messages in the staff chat. Only you see it. You can also set a different one for a single chat from its header"),
+                                "full"        => true,
+                                "options"     => StaffChatWallpaper::catalogue($user, withUsage: true),
+                                "value"       => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'mode', 'style']),
+                            ],
+                            "verba_more_room" => [
+                                "type"        => "toggle",
+                                "label"       => __("Give Verba more room"),
+                                "submitOnConfirm" => true,
+                                "noSaveButton"    => true,
+                                "information" => __("While you are in Verba, the aiku menu on the left and the bar on the right fold to their thin strips. They come back as you had them when you leave Verba"),
+                                "noIcon"      => true,
+                                "value"       => (bool) (Arr::get($user->settings, 'verba_more_room') ?? true),
+                            ],
+                        ],
+                    ],
+                    [
+                        "key"    => "appearance",
                         "label"  => __("Appearance"),
                         "icon"   => "fal fa-paint-brush",
                         "fields" => [
@@ -118,19 +146,6 @@ class EditProfileSettings
                                     "enabled" => (bool) Arr::get($user->settings, 'org_themes.enabled', false),
                                     "themes"  => array_values(Arr::get($user->settings, 'org_themes.themes') ?: []),
                                 ],
-                            ],
-                            "chat_theme" => [
-                                "type"  => "chat_theme",
-                                "label" => __("Chat panel color"),
-                                "value" => Arr::get($user->settings, 'chat_theme', 'classic'),
-                            ],
-                            "chat_wallpaper" => [
-                                "type"        => "chat_wallpaper",
-                                "label"       => __("Chat wallpaper"),
-                                "information" => __("The background behind your messages in the staff chat. Only you see it. You can also set a different one for a single chat from its header"),
-                                "full"        => true,
-                                "options"     => StaffChatWallpaper::catalogue($user, withUsage: true),
-                                "value"       => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'mode', 'style']),
                             ],
                             "hide_logo" => [
                                 "type"    => "toggle",

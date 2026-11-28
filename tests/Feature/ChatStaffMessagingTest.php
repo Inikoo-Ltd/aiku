@@ -2410,3 +2410,17 @@ describe('let a colleague help me', function () {
         actingAs($this->stranger)->delete(route('grp.chat.staff.help.destroy', $helpGrant->ulid))->assertForbidden();
     });
 });
+
+test('Verba Home lists the people of starred DMs, only DMs the person is in, INI-598', function () {
+    Event::fake([\App\Events\StaffMessageSent::class]);
+    $friend   = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    $stranger = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    $mine     = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$friend->id]]);
+    $notMine  = \App\Actions\Chat\Staff\StoreStaffConversation::run($friend, ['user_ids' => [$stranger->id]]);
+    $this->user->update(['settings' => [...($this->user->settings ?? []), 'desk_starred' => ["dm-$mine->ulid", "dm-$notMine->ulid", 'slack-1']]]);
+
+    $starred = actingAs($this->user)->getJson(route('grp.chat.staff.home'))->assertOk()->json('starred');
+
+    expect(collect($starred)->pluck('conversation_ulid')->all())->toBe([$mine->ulid])
+        ->and($starred[0]['name'])->toBe($friend->chatName());
+});

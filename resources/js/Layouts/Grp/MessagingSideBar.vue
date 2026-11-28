@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, faUser, faComments, faStar as faStarRegular, faPlus, faTimes, faComment, faGopuram, faHomeAlt, faHeart, faExpandAlt, faPencil, faLifeRing, faShoppingCart, faCube, faCircle, faSpinner, faCheckCircle, faBan, faTasks, faEye, faEyeSlash, faLightbulbOn } from "@fal"
 import { faStar as faStarSolid, faEye as faEyeSolid, faMoon as faMoonSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
 import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
@@ -34,10 +34,12 @@ library.add(faChevronLeft, faChevronDoubleLeft, faChevronDoubleRight, faSearch, 
 const openFullMessaging = () => router.visit(route("grp.chat.staff.index"))
 
 const layout = inject("layout", layoutStructure)
+const isInVerba = computed(() => (layout.currentRoute ?? "").startsWith("grp.chat.staff."))
+const isFoldedForVerba = computed(() => isInVerba.value && (usePage().props as any).auth?.user?.settings?.verba_more_room !== false)
 const store = useStaffMessaging()
 
 const persistSidebarState = () => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !isFoldedForVerba.value) {
         localStorage.setItem("messagingSideBar", layout.messagingSidebar.show.toString())
         localStorage.setItem("messagingSideBarMicro", (!!layout.messagingSidebar.micro).toString())
     }
@@ -617,12 +619,12 @@ onUnmounted(() => {
 
         <!-- COLLAPSED: avatar rail -->
         <div v-if="!layout.messagingSidebar.show" class="flex-1 shrink-0 flex flex-col items-center gap-y-3 pt-4 pb-2">
-            <template v-if="isRailPartHidden('chat_bubbles')" />
+            <template v-if="isRailPartHidden('chat_bubbles') || isInVerba" />
             <template v-else-if="!store.fetched">
                 <span v-for="placeholder in RAIL_NEWEST_CHATS" :key="'rail-chat-skeleton-' + placeholder" class="h-7 w-7 shrink-0 animate-pulse rounded-full bg-[var(--chat-line)]" aria-hidden="true" />
             </template>
             <button
-                v-for="conversation in isRailPartHidden('chat_bubbles') ? [] : newestConversations"
+                v-for="conversation in isRailPartHidden('chat_bubbles') || isInVerba ? [] : newestConversations"
                 :key="'rail-chat-' + conversation.ulid"
                 type="button"
                 :data-rail="conversation.unread_count > 0 ? 'chat_bubble_unread' : 'chat_bubble_read'"

@@ -72,6 +72,7 @@ class GetLoggedUser
                 'sales_quarters' => (int) Arr::get($user->settings, 'sales_quarters', 5),
                 'chat_auto_translate' => (bool) Arr::get($user->settings, 'chat_auto_translate', true),
                 'verba_welcome_seen' => (bool) Arr::get($user->settings, 'verba_welcome_seen', false),
+                'verba_more_room' => (bool) (Arr::get($user->settings, 'verba_more_room') ?? true),
                 'chat_wallpapers' => StaffChatWallpaper::catalogue($user),
                 'chat_languages' => GetChatLanguagesRead::run($user),
             ]

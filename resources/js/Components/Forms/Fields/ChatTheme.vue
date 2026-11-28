@@ -12,17 +12,20 @@ const props = defineProps<{
     fieldName: string
     options?: any
     fieldData: {
+        noSaveButton?: boolean
     }
+    submit?: () => void
 }>()
 
 const onClickTheme = (key: string) => {
     props.form[props.fieldName] = key
     applyChatTheme(key)
+    if (props.fieldData.noSaveButton) props.submit?.()
 }
 </script>
 
 <template>
-    <div class="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div class="grid w-full max-w-md grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <button v-for="(theme, key) in useChatThemes" :key="key" type="button"
             class="relative rounded-md transition hover:shadow-md focus:outline-none"
             :class="form[fieldName] === key ? 'ring-2 ring-offset-2 ring-[color:var(--app-accent)]' : ''"
