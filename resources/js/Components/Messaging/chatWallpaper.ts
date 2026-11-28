@@ -6,7 +6,7 @@ export type ChatWallpaper = { pattern: string | null; colour: string | null }
 export type ChatWallpaperCatalogue = {
     patterns: { key: string; label: string; is_seasonal: boolean; is_new: boolean; users: number }[]
     colours: { key: string; hex: string }[]
-    stored: { pattern: string; colour: string; mode: string; style?: string }
+    stored: { pattern: string; colour: string; style?: string }
 }
 
 const tiles = import.meta.glob("./wallpapers/*.svg", { eager: true, query: "?url", import: "default" }) as Record<string, string>
@@ -35,7 +35,7 @@ export const wallpaperStyle = (wallpaper: ChatWallpaper | null | undefined): CSS
     }
 }
 
-export const listSwatch = (conversation: { wallpaper?: ChatWallpaper | null; wallpaper_is_set?: boolean }, mode: string | undefined) =>
-    conversation.wallpaper?.colour && (conversation.wallpaper_is_set || (mode && mode !== "same")) ? conversation.wallpaper.colour : null
+export const listSwatch = (conversation: { wallpaper?: ChatWallpaper | null; wallpaper_is_set?: boolean }) =>
+    conversation.wallpaper?.colour && conversation.wallpaper_is_set ? conversation.wallpaper.colour : null
 
 export const useBubbles = () => computed(() => (usePage().props as any)?.auth?.user?.settings?.chat_wallpapers?.stored?.style === "bubbles")

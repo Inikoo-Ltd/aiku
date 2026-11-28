@@ -322,7 +322,6 @@ class UpdateProfile extends OrgAction
             'chat_wallpaper'         => ['sometimes', 'array'],
             'chat_wallpaper.pattern' => ['sometimes', 'string', Rule::in([StaffChatWallpaper::NONE, ...array_filter(array_keys(StaffChatWallpaper::PATTERNS), fn (string $pattern) => StaffChatWallpaper::isOffered($pattern))])],
             'chat_wallpaper.colour'  => ['sometimes', 'string', Rule::in([StaffChatWallpaper::NONE, ...array_keys(StaffChatWallpaper::COLOURS)])],
-            'chat_wallpaper.mode'    => ['sometimes', 'string', Rule::in(StaffChatWallpaper::MODES)],
             'chat_wallpaper.style'   => ['sometimes', 'string', Rule::in(StaffChatWallpaper::STYLES)],
             'chat_languages'    => ['sometimes', 'nullable', 'array', 'max:20'],
             'chat_languages.*'  => ['string', 'exists:languages,code'],
@@ -445,7 +444,6 @@ class UpdateProfile extends OrgAction
         return [
             'pattern'          => $pattern,
             'colour'           => $submitted['colour'] ?? $stored['colour'],
-            'mode'             => $submitted['mode'] ?? $stored['mode'],
             'style'            => $submitted['style'] ?? $stored['style'],
             'previous_pattern' => $previousPattern,
             'seen'             => $stored['seen'],

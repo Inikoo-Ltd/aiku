@@ -236,7 +236,6 @@ const showArchived = computed(() => !isCollapsed("archived") || (showSlackChanne
 const store = useStaffMessaging()
 const myId = computed(() => usePage().props?.auth?.user?.id)
 useSlackLive(() => (knownDirectChannels.value.length && myId.value ? "grp.slack-direct." + myId.value : null), onSlackLive)
-const wallpaperMode = computed<string | undefined>(() => (usePage().props as any)?.auth?.user?.settings?.chat_wallpapers?.stored?.mode)
 
 const selectedUlid = ref<string | null>(window.innerWidth < 768 ? null : props.selected_ulid)
 const isMobile = ref(window.innerWidth < 768)
@@ -653,7 +652,7 @@ onUnmounted(() => {
                             v-for="conversation in shownStarredConversations"
                             :key="'starred-' + conversation.ulid"
                             :label="conversationTitle(conversation)"
-                            :swatch="listSwatch(conversation, wallpaperMode)"
+                            :swatch="listSwatch(conversation)"
                             :avatar="conversationAvatar(conversation)"
                             :group-size="conversation.type === 'group' ? conversation.participants.length - 1 : undefined"
                             :unread="conversation.unread_count"
@@ -690,7 +689,7 @@ onUnmounted(() => {
                             v-for="conversation in shownConversations"
                             :key="conversation.ulid"
                             :label="conversationTitle(conversation)"
-                            :swatch="listSwatch(conversation, wallpaperMode)"
+                            :swatch="listSwatch(conversation)"
                             :avatar="conversationAvatar(conversation)"
                             :group-size="conversation.type === 'group' ? conversation.participants.length - 1 : undefined"
                             :unread="conversation.unread_count"
@@ -774,7 +773,7 @@ onUnmounted(() => {
                             v-for="conversation in shownLegacyConversations"
                             :key="conversation.ulid"
                             :label="conversationTitle(conversation)"
-                            :swatch="listSwatch(conversation, wallpaperMode)"
+                            :swatch="listSwatch(conversation)"
                             :avatar="conversationAvatar(conversation)"
                             :group-size="conversation.participants.length - 1"
                             :unread="conversation.unread_count"
@@ -834,7 +833,7 @@ onUnmounted(() => {
                             :key="'compact-starred-' + conversation.ulid"
                             compact
                             :label="conversationTitle(conversation)"
-                            :swatch="listSwatch(conversation, wallpaperMode)"
+                            :swatch="listSwatch(conversation)"
                             :avatar="conversationAvatar(conversation)"
                             :group-size="conversation.type === 'group' ? conversation.participants.length - 1 : undefined"
                             :unread="conversation.unread_count"
@@ -875,7 +874,7 @@ onUnmounted(() => {
                         :key="'compact-' + conversation.ulid"
                         compact
                         :label="conversationTitle(conversation)"
-                        :swatch="listSwatch(conversation, wallpaperMode)"
+                        :swatch="listSwatch(conversation)"
                         :avatar="conversationAvatar(conversation)"
                         :group-size="conversation.type === 'group' ? conversation.participants.length - 1 : undefined"
                         :unread="conversation.unread_count"

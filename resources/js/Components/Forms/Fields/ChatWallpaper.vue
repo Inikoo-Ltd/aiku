@@ -28,7 +28,7 @@ const props = defineProps<{
 }>()
 
 if (!props.form[props.fieldName]) {
-    props.form[props.fieldName] = { pattern: "none", colour: "none", mode: "same", style: "rows" }
+    props.form[props.fieldName] = { pattern: "none", colour: "none", style: "rows" }
 }
 if (!props.form[props.fieldName].style) {
     props.form[props.fieldName].style = "rows"

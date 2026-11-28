@@ -8,7 +8,6 @@
 
 namespace App\Actions\Chat\Staff;
 
-use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -42,8 +41,6 @@ class StaffChatWallpaper
         'butter'   => '#f7f4e6',
         'mist'     => '#f0f2f3',
     ];
-
-    public const array MODES = ['same', 'workplace', 'person'];
 
     /** rows: names and text in lines; bubbles: each message in its own bubble. */
     public const array STYLES = ['rows', 'bubbles'];
@@ -95,7 +92,7 @@ class StaffChatWallpaper
     }
 
     /**
-     * @return array{pattern: string, colour: string, mode: string, style: string, previous_pattern: string|null, seen: string[]}
+     * @return array{pattern: string, colour: string, style: string, previous_pattern: string|null, seen: string[]}
      */
     public static function stored(User $user): array
     {
@@ -104,7 +101,6 @@ class StaffChatWallpaper
         return [
             'pattern'          => (string) ($stored['pattern'] ?? self::NONE),
             'colour'           => (string) ($stored['colour'] ?? self::NONE),
-            'mode'             => in_array($stored['mode'] ?? null, self::MODES, true) ? $stored['mode'] : 'same',
             'style'            => in_array($stored['style'] ?? null, self::STYLES, true) ? $stored['style'] : 'rows',
             'previous_pattern' => $stored['previous_pattern'] ?? null,
             'seen'             => array_values((array) ($stored['seen'] ?? [])),
@@ -126,7 +122,7 @@ class StaffChatWallpaper
      *
      * @return array{pattern: string|null, colour: string|null}
      */
-    public static function forConversation(User $viewer, StaffConversation $conversation, ?array $ownChoice, ?Carbon $today = null): array
+    public static function forConversation(User $viewer, ?array $ownChoice, ?Carbon $today = null): array
     {
         $general = self::general($viewer, $today);
 
@@ -136,21 +132,7 @@ class StaffChatWallpaper
             return $chosen['pattern'] || $chosen['colour'] ? $chosen : $general;
         }
 
-        $mode = self::stored($viewer)['mode'];
-        if ($mode === 'same' || $conversation->type !== 'dm' || $conversation->context_type) {
-            return $general;
-        }
-
-        $other = $conversation->participants->first(fn (User $participant) => $participant->id !== $viewer->id);
-        if (!$other) {
-            return $general;
-        }
-
-        $colourKey = $mode === 'person'
-            ? self::colourFor($other->id)
-            : ($other->employed_in_organisation_id ? self::colourFor($other->employed_in_organisation_id) : null);
-
-        return $colourKey ? ['pattern' => $general['pattern'], 'colour' => self::COLOURS[$colourKey]] : $general;
+        return $general;
     }
 
     /**
@@ -167,13 +149,6 @@ class StaffChatWallpaper
         }
 
         return self::general($viewer, $today);
-    }
-
-    public static function colourFor(int $id): string
-    {
-        $keys = array_keys(self::COLOURS);
-
-        return $keys[$id % count($keys)];
     }
 
     /**
@@ -200,7 +175,6 @@ class StaffChatWallpaper
             'stored'   => [
                 'pattern' => $stored['pattern'],
                 'colour'  => $stored['colour'],
-                'mode'    => $stored['mode'],
                 'style'   => $stored['style'],
             ],
         ];

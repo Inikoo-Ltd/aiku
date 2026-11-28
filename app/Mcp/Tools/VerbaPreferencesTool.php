@@ -27,7 +27,7 @@ use Laravel\Mcp\Server\Tool;
  * (UpdateProfile, SetStaffChatWallpaper). A V·Desk or conversation is starred or given a wallpaper only when this user
  * can read it (WithVerbaConversation).
  */
-#[Description('Shows or changes the user\'s own Verba preferences: the chat wallpaper (pattern, colour, mode, style), starred V·Desks and conversations, and whether the Verba welcome was seen. Without changes it shows them with the allowed values. With changes and no confirm it previews before and after; with confirm=true and the user\'s request text it saves. wallpaper_conversation sets a wallpaper for one conversation or V·Desk only (pattern and colour none and none takes it back to the general one). star and unstar take ids from verba-tool. Only the user\'s own preferences.')]
+#[Description('Shows or changes the user\'s own Verba preferences: the chat wallpaper (pattern, colour, style), starred V·Desks and conversations, and whether the Verba welcome was seen. Without changes it shows them with the allowed values. With changes and no confirm it previews before and after; with confirm=true and the user\'s request text it saves. wallpaper_conversation sets a wallpaper for one conversation or V·Desk only (pattern and colour none and none takes it back to the general one). star and unstar take ids from verba-tool. Only the user\'s own preferences.')]
 class VerbaPreferencesTool extends Tool
 {
     use WithVerbaConversation;
@@ -40,7 +40,6 @@ class VerbaPreferencesTool extends Tool
         $request->validate([
             'pattern'                => ['sometimes', 'string', Rule::in($patterns)],
             'colour'                 => ['sometimes', 'string', Rule::in($colours)],
-            'mode'                   => ['sometimes', 'string', Rule::in(StaffChatWallpaper::MODES)],
             'style'                  => ['sometimes', 'string', Rule::in(StaffChatWallpaper::STYLES)],
             'wallpaper_conversation' => ['sometimes', 'string', 'max:40'],
             'star'                   => ['sometimes', 'array', 'max:50'],
@@ -56,10 +55,10 @@ class VerbaPreferencesTool extends Tool
         $user   = $request->user();
         $before = $this->current($user);
 
-        $wallpaper = array_filter($request->only(['pattern', 'colour', 'mode', 'style']));
+        $wallpaper = array_filter($request->only(['pattern', 'colour', 'style']));
         $hasChange = $wallpaper || $request->hasAny(['star', 'unstar', 'welcome_seen']);
         if (!$hasChange) {
-            return Response::json([...$before, 'allowed' => ['pattern' => $patterns, 'colour' => $colours, 'mode' => StaffChatWallpaper::MODES, 'style' => StaffChatWallpaper::STYLES]]);
+            return Response::json([...$before, 'allowed' => ['pattern' => $patterns, 'colour' => $colours, 'style' => StaffChatWallpaper::STYLES]]);
         }
 
         $target = null;
@@ -129,12 +128,12 @@ class VerbaPreferencesTool extends Tool
     }
 
     /**
-     * @return array{wallpaper: array{pattern: string, colour: string, mode: string, style: string}, starred: array<int, string>, welcome_seen: bool}
+     * @return array{wallpaper: array{pattern: string, colour: string, style: string}, starred: array<int, string>, welcome_seen: bool}
      */
     private function current(User $user): array
     {
         return [
-            'wallpaper'    => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'mode', 'style']),
+            'wallpaper'    => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'style']),
             'starred'      => array_values((array) (Arr::get($user->settings, 'desk_starred') ?? [])),
             'welcome_seen' => (bool) Arr::get($user->settings, 'verba_welcome_seen'),
         ];
@@ -148,7 +147,6 @@ class VerbaPreferencesTool extends Tool
         return [
             'pattern'                => $schema->string()->description('Wallpaper pattern, e.g. dots, waves or none'),
             'colour'                 => $schema->string()->description('Wallpaper colour, e.g. sand, sage, sky, blush, lavender, butter, mist or none'),
-            'mode'                   => $schema->string()->enum(StaffChatWallpaper::MODES)->description('Whose wallpaper a conversation shows: same (the user\'s own everywhere), workplace or person'),
             'style'                  => $schema->string()->enum(StaffChatWallpaper::STYLES)->description('rows (names and text in lines) or bubbles'),
             'wallpaper_conversation' => $schema->string()->description('Id from verba-tool: set pattern and colour for that conversation or V·Desk only'),
             'star'                   => $schema->array()->items($schema->string())->description('Ids from verba-tool to star'),

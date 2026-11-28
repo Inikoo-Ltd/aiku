@@ -141,7 +141,7 @@ class StaffConversationResource extends JsonResource
             'participants'    => $participants,
             'my_left_at'      => $myLeftAt ? Carbon::parse($myLeftAt)->toIso8601ZuluString() : null,
             'is_watching'     => (bool) ($myPivot?->is_watching ?? false),
-            'wallpaper'       => $viewer ? StaffChatWallpaper::forConversation($viewer, $this->resource, $myWallpaper) : null,
+            'wallpaper'       => $viewer ? StaffChatWallpaper::forConversation($viewer, $myWallpaper) : null,
             'wallpaper_is_set' => (bool) $myWallpaper,
             'can_call'        => $myPivot && !$myLeftAt && \App\Models\Chat\StaffCall::isEnabled() && \App\Models\Chat\StaffCall::canBeHeldIn($this->resource),
             'can_get_help'    => $myPivot && !$myLeftAt && !$this->resource->isBotDirect() && \App\Models\Chat\StaffCall::canBeHeldIn($this->resource) && $participants->count() === 2,

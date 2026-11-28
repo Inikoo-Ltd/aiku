@@ -111,7 +111,7 @@ class EditProfileSettings
                                 "information" => __("The background behind your messages in the staff chat. Only you see it. You can also set a different one for a single chat from its header"),
                                 "full"        => true,
                                 "options"     => StaffChatWallpaper::catalogue($user, withUsage: true),
-                                "value"       => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'mode', 'style']),
+                                "value"       => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'style']),
                             ],
                             "verba_more_room" => [
                                 "type"        => "toggle",

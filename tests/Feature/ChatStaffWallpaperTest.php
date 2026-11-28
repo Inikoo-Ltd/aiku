@@ -44,11 +44,11 @@ $resourceFor = fn (User $viewer, $conversation) => (new StaffConversationResourc
 test('the general wallpaper is saved and loaded, and the default stays plain', function () {
     expect(StaffChatWallpaper::general($this->user))->toBe(['pattern' => null, 'colour' => null]);
 
-    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['pattern' => 'dots', 'colour' => 'sage', 'mode' => 'same']])->assertSuccessful();
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['pattern' => 'dots', 'colour' => 'sage']])->assertSuccessful();
 
     $this->user->refresh();
     expect(StaffChatWallpaper::general($this->user))->toBe(['pattern' => 'dots', 'colour' => StaffChatWallpaper::COLOURS['sage']])
-        ->and(GetLoggedUser::run($this->user)['settings']['chat_wallpapers']['stored'])->toBe(['pattern' => 'dots', 'colour' => 'sage', 'mode' => 'same', 'style' => 'rows']);
+        ->and(GetLoggedUser::run($this->user)['settings']['chat_wallpapers']['stored'])->toBe(['pattern' => 'dots', 'colour' => 'sage', 'style' => 'rows']);
 
     actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['style' => 'bubbles']])->assertSuccessful();
     expect(StaffChatWallpaper::stored($this->user->fresh())['style'])->toBe('bubbles')
@@ -87,22 +87,6 @@ test('a wallpaper for one conversation is that person\'s only and clearing it fa
     actingAs($this->otherUser)->postJson(route('grp.chat.staff.wallpaper.update'), ['conversation_ulid' => $notTheirChat->ulid, 'pattern' => 'dots', 'colour' => 'none'])->assertUnprocessable();
 });
 
-test('the automatic colour per person is stable for the same pair, and by workplace follows the other person\'s organisation', function () use ($resourceFor) {
-    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['mode' => 'person']])->assertSuccessful();
-
-    $first  = $resourceFor($this->user->fresh(), $this->conversation)['wallpaper'];
-    $second = $resourceFor($this->user->fresh(), $this->conversation)['wallpaper'];
-    expect($first['colour'])->toBe(StaffChatWallpaper::COLOURS[StaffChatWallpaper::colourFor($this->otherUser->id)])
-        ->and($second)->toBe($first);
-
-    $this->otherUser->update(['employed_in_organisation_id' => $this->organisation->id]);
-    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['mode' => 'workplace']])->assertSuccessful();
-    expect($resourceFor($this->user->fresh(), $this->conversation)['wallpaper']['colour'])->toBe(StaffChatWallpaper::COLOURS[StaffChatWallpaper::colourFor($this->organisation->id)]);
-
-    actingAs($this->user)->postJson(route('grp.chat.staff.wallpaper.update'), ['conversation_ulid' => $this->conversation->ulid, 'pattern' => 'none', 'colour' => 'butter'])->assertSuccessful();
-    expect($resourceFor($this->user->fresh(), $this->conversation)['wallpaper']['colour'])->toBe(StaffChatWallpaper::COLOURS['butter']);
-});
-
 test('a seasonal wallpaper is offered only in its window and gives way to the previous one when it closes', function () {
     Carbon::setTestNow('2026-07-10 10:00:00');
     actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['pattern' => 'snow']])->assertUnprocessable();
@@ -121,7 +105,7 @@ test('a seasonal wallpaper is offered only in its window and gives way to the pr
 });
 
 test('the login watercolour can be chosen, and every pattern has its picture, INI-597', function () {
-    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['pattern' => 'watercolour', 'colour' => 'none', 'mode' => 'same']])->assertSuccessful();
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['pattern' => 'watercolour', 'colour' => 'none']])->assertSuccessful();
 
     expect(StaffChatWallpaper::general($this->user->fresh())['pattern'])->toBe('watercolour');
     foreach (array_keys(StaffChatWallpaper::PATTERNS) as $pattern) {

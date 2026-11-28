@@ -33,7 +33,7 @@ class SetStaffChatWallpaper
     {
         $conversation->participants()->updateExistingPivot($user->id, ['wallpaper' => $choice ? json_encode($choice) : null]);
 
-        return StaffChatWallpaper::forConversation($user, $conversation->load('participants'), $choice);
+        return StaffChatWallpaper::forConversation($user, $choice);
     }
 
     /**
