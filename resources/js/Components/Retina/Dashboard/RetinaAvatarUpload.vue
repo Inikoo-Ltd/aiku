@@ -35,7 +35,9 @@ const upload = (file?: File | null) => {
 
 <template>
     <span class="relative inline-flex shrink-0 flex-col items-start">
-        <Image v-if="avatar" :src="avatar" imageCover class="size-8 rounded-full object-cover" />
+        <span v-if="avatar" class="block size-8 overflow-hidden rounded-full">
+            <Image :src="avatar" imageCover class="h-full w-full object-cover" />
+        </span>
 
         <button v-else type="button"
             class="group relative flex size-8 items-center justify-center rounded-full border border-dashed transition-colors"
