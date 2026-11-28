@@ -6,6 +6,8 @@
 
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
+import { computed } from "vue"
+import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -17,7 +19,7 @@ import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 type Warning = { type: string; since?: string | null; working_hours?: number | null; command?: string; started_at?: string | null; error?: string | null; count?: number }
 type Run = { command: string; scheduled_at: string; status: string; started_at: string | null; finished_at: string | null; error: string | null; totals: Record<string, number | string> | null }
 
-defineProps<{
+const props = defineProps<{
     title: string
     pageHead: object
     summary: {
@@ -42,6 +44,18 @@ defineProps<{
     runs: Run[]
     warnings: Warning[]
     data: object
+    writing: {
+        share: number | null
+        previous_share: number | null
+        messages: number
+        from_aiku: number
+        previous_messages: number
+        previous_from_aiku: number
+        people_connected: number
+        people_writing_from_aiku: number
+        weeks: { week: string; from_aiku: number; in_slack: number }[]
+    }
+    writing_channels: object
 }>()
 
 const number = (value: number) => value.toLocaleString()
@@ -105,6 +119,37 @@ const FILE_STATE: Record<string, () => string> = {
     failed: () => ctrans("Failed"),
     pending: () => ctrans("Pending"),
     copying: () => ctrans("Copying"),
+}
+
+const FROM_AIKU = "#7c5cff"
+const IN_SLACK = "#e8a33d"
+
+const shareText = (share: number | null) => (share === null ? "–" : `${share.toLocaleString()}%`)
+
+const shareChange = computed(() => {
+    const { share, previous_share } = props.writing
+    return share === null || previous_share === null ? null : Math.round((share - previous_share) * 10) / 10
+})
+
+const line = (label: string, data: number[], colour: string) => ({ label, data, borderColor: colour, backgroundColor: colour, borderWidth: 1.5, fill: false, tension: 0, pointRadius: 2.5, pointHoverRadius: 4 })
+
+const writingChart = computed(() => ({
+    labels: props.writing.weeks.map((week) => useFormatTime(week.week, { formatTime: "d MMM" })),
+    datasets: [
+        line(ctrans("Written from aiku"), props.writing.weeks.map((week) => week.from_aiku), FROM_AIKU),
+        line(ctrans("Written in Slack"), props.writing.weeks.map((week) => week.in_slack), IN_SLACK),
+    ],
+}))
+
+const writingChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 12, color: "#4b5563" } } },
+    scales: {
+        x: { grid: { display: false }, ticks: { color: "#6b7280", maxRotation: 0 } },
+        y: { beginAtZero: true, grid: { color: "#f3f4f6" }, ticks: { color: "#6b7280", precision: 0 } },
+    },
 }
 
 const totalsText = (totals: Record<string, number | string> | null) =>
@@ -225,6 +270,61 @@ const totalsText = (totals: Record<string, number | string> | null) =>
             <span v-if="item.history_complete" class="whitespace-nowrap text-green-700">{{ ctrans("Complete") }}</span>
             <span v-else-if="item.status === 'kept'" class="whitespace-nowrap text-amber-700">{{ ctrans("Not yet") }}</span>
             <span v-else class="text-gray-400">–</span>
+        </template>
+    </Table>
+
+    <div class="space-y-4 p-4 text-sm text-gray-700">
+        <div>
+            <h2 class="text-base font-semibold text-gray-900">{{ ctrans("Where messages are written") }}</h2>
+            <p class="text-xs text-gray-500">{{ ctrans("Messages people wrote in the public and private Slack channels kept in aiku, from aiku or in Slack. DMs, bots, system lines and deleted messages are left out; thread replies count. The table lists public channels only.") }}</p>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-3">
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="text-xs text-gray-500">{{ ctrans("Written from aiku, last 7 days") }}</div>
+                <div class="mt-1 flex items-baseline gap-2">
+                    <span class="text-3xl font-semibold tabular-nums text-gray-900">{{ shareText(writing.share) }}</span>
+                    <span v-if="shareChange !== null" v-tooltip="ctrans('Against the 7 days before: :share', { share: shareText(writing.previous_share) })" class="whitespace-nowrap text-xs font-medium tabular-nums" :class="shareChange > 0 ? 'text-green-600' : shareChange < 0 ? 'text-red-500' : 'text-gray-400'">
+                        {{ shareChange > 0 ? "+" : "" }}{{ shareChange.toLocaleString() }} {{ ctrans("points") }}
+                    </span>
+                </div>
+                <div class="mt-1 text-xs tabular-nums text-gray-500">{{ ctrans(":from_aiku of :messages messages", { from_aiku: number(writing.from_aiku), messages: number(writing.messages) }) }}</div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="text-xs text-gray-500">{{ ctrans("People who connected their Slack") }}</div>
+                <div class="mt-1 text-3xl font-semibold tabular-nums text-gray-900">{{ number(writing.people_connected) }}</div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="text-xs text-gray-500">{{ ctrans("People who wrote from aiku, last 7 days") }}</div>
+                <div class="mt-1 text-3xl font-semibold tabular-nums text-gray-900">{{ number(writing.people_writing_from_aiku) }}</div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Messages per week, last :weeks weeks", { weeks: writing.weeks.length }) }}</h3>
+            <div class="mt-3 h-64">
+                <Chart type="line" :data="writingChart" :options="writingChartOptions" class="h-full" />
+            </div>
+        </div>
+    </div>
+
+    <Table :resource="writing_channels" name="writing">
+        <template #cell(name)="{ item }">
+            <span class="whitespace-nowrap font-medium text-gray-800">#{{ item.name }}</span>
+        </template>
+
+        <template #cell(messages)="{ item }">
+            <span class="tabular-nums">{{ number(item.messages) }}</span>
+        </template>
+
+        <template #cell(from_aiku)="{ item }">
+            <span class="tabular-nums">{{ number(item.from_aiku) }}</span>
+        </template>
+
+        <template #cell(share)="{ item }">
+            <span class="tabular-nums">{{ shareText(item.share) }}</span>
         </template>
     </Table>
 </template>

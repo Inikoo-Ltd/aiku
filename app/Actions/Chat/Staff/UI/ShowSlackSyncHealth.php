@@ -319,7 +319,17 @@ class ShowSlackSyncHealth extends OrgAction
             'runs'        => $runs,
             'warnings'    => $this->warnings($summary, $runs),
             'data'        => JsonResource::collection($channels),
-        ])->table($this->tableStructure());
+            'writing'     => GetSlackWritingFromAiku::make()->handle($this->group),
+            'writing_channels' => JsonResource::collection(
+                GetSlackWritingFromAiku::make()->channels($this->group)->through(fn (SlackChannel $channel) => [
+                    'id'        => $channel->id,
+                    'name'      => $channel->name,
+                    'messages'  => (int) $channel->getAttribute('messages'),
+                    'from_aiku' => (int) $channel->getAttribute('from_aiku'),
+                    'share'     => (float) $channel->getAttribute('share'),
+                ])
+            ),
+        ])->table($this->tableStructure())->table(GetSlackWritingFromAiku::make()->tableStructure());
     }
 
     public function getBreadcrumbs(): array

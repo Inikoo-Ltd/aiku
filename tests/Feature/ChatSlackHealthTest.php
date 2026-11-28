@@ -103,6 +103,10 @@ test('engineers see the public Slack channels without a Slack account, other sta
 
 test('the Slack sync health page is for engineers only', function () {
     actingAs(($this->makeUser)('group-admin'))->get(route('grp.devops.slack_sync'))->assertForbidden();
+    actingAs(($this->makeUser)('help-desk-clerk'))
+        ->get(route('grp.devops.slack_sync', ['writing_filter' => ['global' => 'secret']]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('writing_channels.data', fn ($rows) => collect($rows)->doesntContain('id', $private->id)));
+
     actingAs(($this->makeUser)(null))->get(route('grp.devops.slack_sync'))->assertForbidden();
 });
 
@@ -191,4 +195,68 @@ test('only the nightly channel sync warns when no run of it is recorded at all',
     $warnings = collect(ShowSlackSyncHealth::make()->warnings(['newest_message_at' => now()->toIso8601String(), 'files_failed' => 0], $runs));
 
     expect($warnings->pluck('type', 'command')->all())->toBe(['slack:sync-public-channels' => 'run_not_recorded']);
+});
+
+test('the share written from aiku counts people only, in public and private channels but not DMs, with deleted messages out and thread replies in, per week and per public channel', function () {
+    $now    = Carbon::parse('2033-06-15 10:00:00', 'UTC');
+    $action = \App\Actions\Chat\Staff\UI\GetSlackWritingFromAiku::make();
+    $before = $action->handle($this->group, $now);
+
+    $writer  = ($this->makeUser)(null);
+    $channel = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => 'CWRITE'.Str::upper(Str::random(6)), 'name' => 'writing-'.Str::lower(Str::random(6)), 'is_member' => true]);
+    $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => 'GWRITE'.Str::upper(Str::random(6)), 'name' => 'secret', 'is_public' => false, 'is_private' => true]);
+    \App\Models\Chat\SlackConnection::create(['user_id' => $writer->id, 'slack_user_id' => 'UWRITE'.Str::upper(Str::random(6)), 'team_id' => 'T1', 'token' => 'xoxp-test', 'connected_at' => $now]);
+
+    $sequence = 0;
+    $message  = function (Carbon $sentAt, array $attributes = []) use ($channel, &$sequence) {
+        return SlackMessage::create(['slack_channel_id' => $channel->id, 'ts' => $sentAt->timestamp.'.'.str_pad((string) ++$sequence, 6, '0', STR_PAD_LEFT), 'text' => 'hi', 'sent_at' => $sentAt, 'data' => ['user' => 'U1'], ...$attributes]);
+    };
+    $root = $message($now->copy()->subDays(1));
+    $message($now->copy()->subDays(1), ['thread_ts' => $root->ts, 'user_id' => $writer->id, 'sent_from_aiku' => true, 'data' => ['user' => 'U1', 'bot_id' => 'BAIKU']]);
+    $message($now->copy()->subDays(2), ['user_id' => $writer->id, 'sent_from_aiku' => true]);
+    $message($now->copy()->subDays(2), ['subtype' => 'thread_broadcast']);
+    $message($now->copy()->subDays(2), ['subtype' => 'channel_join']);
+    $message($now->copy()->subDays(2), ['data' => ['bot_id' => 'BOTHER']]);
+    $message($now->copy()->subDays(2), ['sent_from_aiku' => true, 'user_id' => $writer->id])->delete();
+    $message($now->copy()->subDays(9));
+    $message($now->copy()->subDays(9), ['user_id' => $writer->id, 'sent_from_aiku' => true]);
+    $message($now->copy()->subWeeks(20), ['sent_from_aiku' => true]);
+    $direct = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => 'DWRITE'.Str::upper(Str::random(6)), 'is_public' => false, 'is_private' => true, 'direct_type' => 'im']);
+    SlackMessage::create(['slack_channel_id' => $private->id, 'ts' => $now->timestamp.'.999999', 'text' => 'x', 'sent_at' => $now->copy()->subDay(), 'sent_from_aiku' => true]);
+    SlackMessage::create(['slack_channel_id' => $direct->id, 'ts' => $now->timestamp.'.999998', 'text' => 'x', 'sent_at' => $now->copy()->subDay(), 'sent_from_aiku' => true]);
+
+    $after = $action->handle($this->group, $now);
+
+    expect($after['messages'] - $before['messages'])->toBe(5)
+        ->and($after['from_aiku'] - $before['from_aiku'])->toBe(3)
+        ->and($after['previous_messages'] - $before['previous_messages'])->toBe(2)
+        ->and($after['previous_from_aiku'] - $before['previous_from_aiku'])->toBe(1)
+        ->and($after['people_writing_from_aiku'] - $before['people_writing_from_aiku'])->toBe(1)
+        ->and($after['people_connected'] - $before['people_connected'])->toBe(1)
+        ->and($after['weeks'])->toHaveCount(\App\Actions\Chat\Staff\UI\GetSlackWritingFromAiku::WEEKS);
+
+    $weekDelta = fn (string $week, string $key) => collect($after['weeks'])->firstWhere('week', $week)[$key] - collect($before['weeks'])->firstWhere('week', $week)[$key];
+    $thisWeek  = $now->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
+    $lastWeek  = $now->copy()->startOfWeek(Carbon::MONDAY)->subWeek()->toDateString();
+    expect($weekDelta($thisWeek, 'from_aiku') + $weekDelta($lastWeek, 'from_aiku'))->toBe(4)
+        ->and($weekDelta($thisWeek, 'in_slack') + $weekDelta($lastWeek, 'in_slack'))->toBe(3);
+
+    $this->travelTo($now);
+    actingAs(($this->makeUser)('help-desk-clerk'))
+        ->get(route('grp.devops.slack_sync', ['writing_filter' => ['global' => $channel->name]]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Chat/SlackSyncHealth')
+            ->where('writing.from_aiku', fn ($count) => $count >= 3)
+            ->has('writing_channels.data', 1)
+            ->where('writing_channels.data.0.name', $channel->name)
+            ->where('writing_channels.data.0.messages', 4)
+            ->where('writing_channels.data.0.from_aiku', 2)
+            ->where('writing_channels.data.0.share', fn ($share) => (float) $share === 50.0));
+
+    actingAs(($this->makeUser)('help-desk-clerk'))
+        ->get(route('grp.devops.slack_sync', ['writing_filter' => ['global' => 'secret']]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('writing_channels.data', fn ($rows) => collect($rows)->doesntContain('id', $private->id)));
+
+    actingAs(($this->makeUser)(null))->get(route('grp.devops.slack_sync'))->assertForbidden();
 });
