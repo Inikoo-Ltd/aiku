@@ -45,6 +45,16 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-verba'    => [
+            'code'               => 'gp-verba',
+            'name'               => 'Verba admin',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'verba',
+            'roles'              => [
+                RolesEnum::VERBA_ADMIN
+            ],
+            'organisation_types' => []
+        ],
         'gp-hd'       => [
             'code'               => 'gp-hd',
             'name'               => 'Engineer',

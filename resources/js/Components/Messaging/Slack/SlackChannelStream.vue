@@ -46,6 +46,7 @@ export interface SlackChannelHeader {
     is_archived: boolean
     is_private?: boolean
     is_direct?: boolean
+    live_channel?: string | null
     brought_by?: string | null
     is_listed?: boolean | null
     member_count?: number
@@ -491,7 +492,7 @@ const updateListing = (isListed: boolean) => {
             <p v-if="channel.brought_by && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">{{ ctrans("This channel is now in Verba, brought by :name", { name: channel.brought_by }) }}</p>
             <div v-if="channel.is_private && !channel.is_direct && channel.is_listed !== null && channel.is_listed !== undefined && activeTab === 'messages'" class="flex shrink-0 items-center gap-x-3 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">
                 <ToggleSwitch :model-value="!!channel.is_listed" input-id="slack-channel-listed" :disabled="isSavingListing" @update:model-value="updateListing" />
-                <label for="slack-channel-listed" class="cursor-pointer">{{ channel.is_listed ? ctrans("Shown in Verbations: everyone can see this channel's name and ask to join. Its messages stay for members only.") : ctrans("Show this channel's name in Verbations, so others can ask to join. Its messages stay for members only.") }}</label>
+                <label for="slack-channel-listed" class="cursor-pointer">{{ channel.is_listed ? ctrans("Shown in V·Desks: everyone can see this channel's name and ask to join. Its messages stay for members only.") : ctrans("Show this channel's name in V·Desks, so others can ask to join. Its messages stay for members only.") }}</label>
             </div>
             <p v-if="channel.is_private && !channel.is_direct && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
             <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="channel.is_direct ? ctrans('Message :name', { name: channel.name ?? '' }) : ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />

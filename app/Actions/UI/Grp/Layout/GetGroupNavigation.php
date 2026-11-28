@@ -399,20 +399,12 @@ class GetGroupNavigation
                     ],
                     [
                         'label'   => 'V·Desks',
-                        'tooltip' => __('V·Desks: public channels'),
+                        'tooltip' => __('V·Desks: channels, public and private'),
                         'icon'    => ['fal', 'fa-hashtag'],
                         'root'    => 'grp.chat.staff.slack.',
+                        'roots'   => ['grp.chat.staff.groups.'],
                         'route'   => [
                             'name' => 'grp.chat.staff.slack.index',
-                        ],
-                    ],
-                    [
-                        'label'   => 'Verbations',
-                        'tooltip' => __('Verbations: private groups, only the people invited see them'),
-                        'icon'    => ['fal', 'fa-draw-square'],
-                        'root'    => 'grp.chat.staff.groups.',
-                        'route'   => [
-                            'name' => 'grp.chat.staff.groups.index',
                         ],
                     ],
                     [
@@ -441,6 +433,15 @@ class GetGroupNavigation
                         'root'    => 'grp.chat.staff.reports',
                         'route'   => [
                             'name' => 'grp.chat.staff.reports',
+                        ],
+                    ]] : []),
+                    ...($user->authTo(\App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum::VERBA_ADMIN->value) ? [[
+                        'label'   => __('Settings'),
+                        'tooltip' => __('Verba settings: which V·Desks each organisation sees'),
+                        'icon'    => ['fal', 'fa-cog'],
+                        'root'    => 'grp.chat.staff.settings.',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.settings.index',
                         ],
                     ]] : []),
                 ],

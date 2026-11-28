@@ -11,7 +11,6 @@ namespace App\Actions\Chat\Staff\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\UI\WithInertia;
-use App\Http\Resources\Chat\StaffConversationResource;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\Group;
 use App\Models\Tasks\StaffTask;
@@ -76,9 +75,6 @@ class ShowStaffMessaging extends OrgAction
                     ],
                 ],
                 'selected_ulid'  => $conversation?->ulid,
-                'selected_conversation' => $conversation
-                    ? (new StaffConversationResource($conversation->load('participants')))->resolve()
-                    : null,
                 'slack_channel'         => null,
                 ...ShowStaffSlackChannels::make()->listProps($group, $request->user(), deferred: true),
             ]

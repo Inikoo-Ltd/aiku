@@ -26,13 +26,14 @@ import { listSwatch } from "@/Components/Messaging/chatWallpaper"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
 import NewVerbrationDialog from "@/Components/Messaging/NewVerbrationDialog.vue"
 import VerbaHome from "@/Components/Messaging/VerbaHome.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SlackPrivateConsentDialog from "@/Components/Forms/Fields/SlackPrivateConsentDialog.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useLayoutStore } from "@/Stores/layout"
 import { deskShortcutList, isMac, useDeskShortcuts } from "@/Composables/useDeskShortcuts"
 import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackChannelStream.vue"
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
-import { isInSlackStream, reloadSlack, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
+import { isInSlackStream, reloadSlack, useSlackLive, useSlackLiveMany, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
 library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
 
@@ -43,6 +44,7 @@ interface SlackChannelListItem {
     topic: string | null
     is_archived: boolean
     workspace?: string | null
+    in_list?: boolean
     last_message_at: string | null
     unread_count?: number
     last_read_ts?: string | null
@@ -63,6 +65,7 @@ const props = defineProps<{
     slack_listed_channels?: SlackListedChannel[]
     slack_direct_channels?: SlackChannelListItem[]
     slack_live_channel?: string | null
+    slack_live_team_channels?: string[]
     slack_channel?: SlackChannelHeader | null
     slack_messages?: { data: SlackStreamMessage[] } | null
     slack_thread_ts?: string | null
@@ -74,6 +77,10 @@ const props = defineProps<{
 
 const knownSlackChannels = ref<SlackChannelListItem[] | null>(props.slack_channels ?? null)
 const knownSlackLiveChannel = ref<string | null>(props.slack_live_channel ?? null)
+const knownTeamLiveChannels = ref<string[]>(props.slack_live_team_channels ?? [])
+watch(() => props.slack_live_team_channels, (channels) => {
+    if (channels !== undefined) knownTeamLiveChannels.value = channels
+})
 watch(() => props.slack_channels, (channels) => {
     if (channels !== undefined) knownSlackChannels.value = channels
 })
@@ -139,6 +146,8 @@ const slackChannelLinks = computed(() => Object.fromEntries((knownSlackChannels.
 const byName = (a: SlackChannelListItem, b: SlackChannelListItem) => (a.name ?? "").localeCompare(b.name ?? "")
 const activeSlackChannels = computed(() => (knownSlackChannels.value ?? []).filter((channel) => !channel.is_archived).sort(byName))
 const archivedSlackChannels = computed(() => (knownSlackChannels.value ?? []).filter((channel) => channel.is_archived).sort(byName))
+const isInSidebarList = (channel: SlackChannelListItem) => channel.in_list !== false || isStarred("slack-" + channel.id) || isSelectedChannel(channel.id) || unreadOf(channel.id) > 0
+const listedArchivedChannels = computed(() => archivedSlackChannels.value.filter(isInSidebarList))
 const slackUnread = ref<Record<number, { count: number; lastReadTs: string | null; counted: string[] }>>({})
 const slackReadError = ref<string | null>(null)
 watch([knownSlackChannels, knownPrivateChannels, knownDirectChannels], ([channels, privates, directs]) => {
@@ -171,7 +180,7 @@ const onSlackLive = (event: SlackLiveEvent) => {
     state.counted.push(message.ts)
     state.count++
 }
-useSlackLive(() => knownSlackLiveChannel.value, onSlackLive)
+useSlackLiveMany(() => [knownSlackLiveChannel.value, ...knownTeamLiveChannels.value].filter((name): name is string => !!name), onSlackLive)
 
 const onSlackChannelRead = (channelId: number, ts: string | null) => {
     const state = slackUnread.value[channelId]
@@ -322,7 +331,7 @@ const closeConversation = () => {
     store.fullViewUlid = null
     selectedUlid.value = null
     router.replace({
-        url: route(isGroups.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"),
+        url: route(isChannelsTab.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"),
         preserveState: true,
         preserveScroll: true,
         props: (current) => ({ ...current, selected_ulid: null }),
@@ -395,19 +404,51 @@ const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().incl
 
 const layoutStore = useLayoutStore()
 const currentRouteName = computed(() => (usePage().url, route().current() ?? layoutStore.currentRoute ?? ""))
-const isDesks = computed(() => currentRouteName.value.startsWith("grp.chat.staff.slack."))
-const isGroups = computed(() => currentRouteName.value.startsWith("grp.chat.staff.groups."))
+const isGroupsRoute = computed(() => currentRouteName.value.startsWith("grp.chat.staff.groups."))
+const isChannelsTab = computed(() => currentRouteName.value.startsWith("grp.chat.staff.slack.") || isGroupsRoute.value)
+type DeskKind = "all" | "public" | "private"
+const deskKindKey = "verba-desk-kind"
+const readDeskKind = (): DeskKind => {
+    try {
+        const stored = window.localStorage.getItem(deskKindKey)
+        return stored === "public" || stored === "private" ? stored : "all"
+    } catch {
+        return "all"
+    }
+}
+const deskKind = ref<DeskKind>(typeof window === "undefined" ? "all" : readDeskKind())
+watch(deskKind, (kind) => {
+    try {
+        window.localStorage.setItem(deskKindKey, kind ?? "all")
+    } catch {
+        // ponytail: not remembered means All on the next visit, nothing lost
+    }
+})
+const deskKindOptions = computed(() => [
+    { label: ctrans("All"), value: "all" as DeskKind },
+    { label: ctrans("Public"), value: "public" as DeskKind },
+    { label: ctrans("Private"), value: "private" as DeskKind },
+])
+const isDesks = computed(() => isChannelsTab.value && deskKind.value !== "private")
+const isGroups = computed(() => isChannelsTab.value && deskKind.value !== "public")
+watch([() => (showSlackChannel.value ? props.slack_channel?.id : null), selectedUlid, () => store.conversations.length], () => {
+    if (!isChannelsTab.value || deskKind.value === "all") return
+    const channel = showSlackChannel.value ? props.slack_channel : null
+    const opensPublic = !!channel && !channel.is_private && !channel.is_direct
+    const opensPrivate = (!!channel && channel.is_private && !channel.is_direct) || (!!selectedUlid.value && isVerbration(store.conversationByUlid(selectedUlid.value)))
+    if ((opensPublic && deskKind.value === "private") || (opensPrivate && deskKind.value === "public")) deskKind.value = "all"
+}, { immediate: true })
 const isFeed = computed(() => currentRouteName.value === "grp.chat.staff.feed")
-const homeTab = computed(() => (isDesks.value ? "desks" : isGroups.value ? "groups" : "directs"))
+const homeTab = computed(() => (isChannelsTab.value ? "desks" : "directs"))
 const isNothingSelected = computed(() => !selectedUlid.value && !showSlackChannel.value)
-const homeRoute = computed(() => route(isDesks.value ? "grp.chat.staff.slack.index" : isGroups.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"))
-const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
+const homeRoute = computed(() => route(isGroupsRoute.value ? "grp.chat.staff.groups.index" : isChannelsTab.value ? "grp.chat.staff.slack.index" : "grp.chat.staff.index"))
+const tabConversations = computed(() => isChannelsTab.value
+    ? (isGroups.value ? messagingConversations.value.filter((conversation) => isVerbration(conversation)) : [])
+    : messagingConversations.value.filter((conversation) => !isVerbration(conversation)))
 const isNewVerbrationOpen = ref(false)
 const isPrivateConsentOpen = ref(false)
-const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbations") : ctrans("Filter V·Ds")))
+const filterLabel = computed(() => (isChannelsTab.value ? ctrans("Filter V·Desks") : ctrans("Filter V·Ds")))
 
-const isChannelRowShown = (channelId: number) => isDesks.value || isSelectedChannel(channelId) || unreadOf(channelId) > 0
-const isConversationRowShown = (conversation: { ulid: string; unread_count: number }) => !isDesks.value || selectedUlid.value === conversation.ulid || conversation.unread_count > 0
 
 const starredKeys = ref<string[]>(props.desk_starred ?? [])
 const isStarred = (key: string) => starredKeys.value.includes(key)
@@ -424,36 +465,35 @@ const shownStarredConversations = computed(() => starredConversations.value.filt
 const starredPrivateChannels = computed(() => (isGroups.value ? privateChannels.value.filter((channel) => isStarred("slack-" + channel.id)) : []))
 const shownStarredPrivateChannels = computed(() => starredPrivateChannels.value.filter((channel) => (filterText.value ? matchesFilter(channel.name) : !isCollapsed("starred") || isSelectedChannel(channel.id) || unreadOf(channel.id) > 0)))
 const hasStarred = computed(() =>
-    isDesks.value
-        ? (filterText.value ? shownStarredChannels.value.length : starredChannels.value.length) > 0
-        : (filterText.value ? shownStarredConversations.value.length + shownStarredPrivateChannels.value.length : starredConversations.value.length + starredPrivateChannels.value.length) > 0,
+    (filterText.value
+        ? (isDesks.value ? shownStarredChannels.value.length : 0) + shownStarredConversations.value.length + shownStarredPrivateChannels.value.length
+        : (isDesks.value ? starredChannels.value.length : 0) + starredConversations.value.length + starredPrivateChannels.value.length) > 0,
 )
 
-const shownActiveChannels = computed(() => activeSlackChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (filterText.value ? matchesFilter(channel.name) : isChannelRowShown(channel.id))))
-const shownArchivedChannels = computed(() => archivedSlackChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (filterText.value ? matchesFilter(channel.name) : showArchived.value)))
-const shownConversations = computed(() => tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid) && (filterText.value ? matchesFilter(conversationTitle(conversation)) : isConversationRowShown(conversation))))
+const shownActiveChannels = computed(() => activeSlackChannels.value.filter(isInSidebarList).filter((channel) => !isStarred("slack-" + channel.id) && (!filterText.value || matchesFilter(channel.name))))
+const shownArchivedChannels = computed(() => listedArchivedChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (filterText.value ? matchesFilter(channel.name) : showArchived.value)))
+const shownConversations = computed(() => tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid) && (!filterText.value || matchesFilter(conversationTitle(conversation)))))
 const shownPrivateChannels = computed(() => (isGroups.value ? privateChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (!filterText.value || matchesFilter(channel.name))) : []))
-const hasNoFilterMatch = computed(() => !!filterText.value && !hasStarred.value && (isDesks.value ? !shownActiveChannels.value.length && !shownArchivedChannels.value.length : !shownConversations.value.length && !shownPrivateChannels.value.length && !shownDirectChannels.value.length))
+const hasNoFilterMatch = computed(() => !!filterText.value && !hasStarred.value && !(isDesks.value && (shownActiveChannels.value.length || shownArchivedChannels.value.length)) && !shownConversations.value.length && !shownPrivateChannels.value.length && !shownDirectChannels.value.length)
 
 const compactChannels = computed(() => isDesks.value
-    ? [...activeSlackChannels.value, ...archivedSlackChannels.value.filter((channel) => isSelectedChannel(channel.id))].filter((channel) => !isStarred("slack-" + channel.id))
+    ? [...activeSlackChannels.value.filter(isInSidebarList), ...archivedSlackChannels.value.filter((channel) => isSelectedChannel(channel.id))].filter((channel) => !isStarred("slack-" + channel.id))
     : [])
-const compactStarredChannels = computed(() => isDesks.value ? starredChannels.value : starredPrivateChannels.value)
-const isDirectsTab = computed(() => !isDesks.value && !isGroups.value)
+const compactStarredChannels = computed(() => [...(isDesks.value ? starredChannels.value : []), ...starredPrivateChannels.value])
+const isDirectsTab = computed(() => !isChannelsTab.value)
 const shownDirectChannels = computed(() => (isDirectsTab.value ? knownDirectChannels.value.filter((channel) => !filterText.value || matchesFilter(channel.name)) : []))
 const compactDirectChannels = computed(() => (isDirectsTab.value ? knownDirectChannels.value : []))
 const compactPrivateChannels = computed(() => (isGroups.value ? privateChannels.value.filter((channel) => !isStarred("slack-" + channel.id)) : []))
-const compactStarredConversations = computed(() => isDesks.value ? [] : starredConversations.value)
-const compactConversations = computed(() => isDesks.value ? [] : tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid)))
+const compactStarredConversations = computed(() => starredConversations.value)
+const compactConversations = computed(() => tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid)))
 
 const sidebarOrder = computed(() => [
-    ...shownStarredChannels.value.map((channel) => ({ channelId: channel.id })),
+    ...(isDesks.value ? shownStarredChannels.value : []).map((channel) => ({ channelId: channel.id })),
     ...shownStarredConversations.value.map((conversation) => ({ ulid: conversation.ulid })),
     ...shownStarredPrivateChannels.value.map((channel) => ({ channelId: channel.id })),
     ...shownPrivateChannels.value.map((channel) => ({ channelId: channel.id })),
-    ...shownActiveChannels.value.map((channel) => ({ channelId: channel.id })),
-    ...shownArchivedChannels.value.map((channel) => ({ channelId: channel.id })),
     ...shownConversations.value.map((conversation) => ({ ulid: conversation.ulid })),
+    ...(isDesks.value ? [...shownActiveChannels.value, ...shownArchivedChannels.value] : []).map((channel) => ({ channelId: channel.id })),
 ])
 
 const moveInSidebar = (step: 1 | -1) => {
@@ -555,15 +595,17 @@ onUnmounted(() => {
                         </button>
                     </label>
 
+                    <SegmentedToggle v-if="isChannelsTab" v-model="deskKind" :options="deskKindOptions" soft class="desk-kind-toggle mx-2" :aria-label="ctrans('Show channels')" />
+
                     <DeskSidebarRow v-if="!sidebarFilter" :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
                 </div>
 
                 <div class="min-h-0 flex-1 overflow-y-auto py-2">
-                    <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
+                    <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isChannelsTab ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() }) }}</p>
     
                     <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
     
-                    <div v-if="isDesks && isSlackLoading" class="space-y-2 px-4 pt-3" aria-hidden="true">
+                    <div v-if="isChannelsTab && isSlackLoading" class="space-y-2 px-4 pt-3" aria-hidden="true">
                         <div class="h-3 w-20 rounded bg-[var(--desk-chip)]" />
                         <div class="h-5 rounded bg-[var(--desk-chip)]" />
                         <div class="h-5 rounded bg-[var(--desk-chip)]" />
@@ -607,7 +649,6 @@ onUnmounted(() => {
                             is-starred
                             @toggle-star="toggleStar('slack-' + channel.id)" />
                         <DeskSidebarRow
-                            v-if="!isDesks"
                             v-for="conversation in shownStarredConversations"
                             :key="'starred-' + conversation.ulid"
                             :label="conversationTitle(conversation)"
@@ -621,43 +662,7 @@ onUnmounted(() => {
                             @toggle-star="toggleStar('dm-' + conversation.ulid)" />
                     </section>
     
-                    <section v-if="isDesks && hasSlack && (!filterText || shownActiveChannels.length)" class="mt-1">
-                        <DeskSidebarRow
-                            v-for="channel in shownActiveChannels"
-                            :key="'slack-' + channel.id"
-                            :label="channel.name ?? ''"
-                            :workspace="channel.workspace"
-                            :href="route('grp.chat.staff.slack.show', channel.id)"
-                            icon="fal fa-hashtag"
-                            :unread="unreadOf(channel.id)"
-                            :has-draft="draftChannelIds.has(channel.id)"
-                            :is-active="isSelectedChannel(channel.id)"
-                            :is-starred="false"
-                            @toggle-star="toggleStar('slack-' + channel.id)" />
-                    </section>
-    
-                    <section v-if="isDesks && hasSlack && (filterText ? shownArchivedChannels.length : archivedSlackChannels.length)" class="mt-3">
-                        <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" v-if="!filterText" :aria-expanded="showArchived" @click="toggleSection('archived')">
-                            <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="!showArchived && '-rotate-90'" fixed-width aria-hidden="true" />
-                            <span>{{ ctrans("Archived (:count)", { count: String(archivedSlackChannels.length) }) }}</span>
-                        </button>
-                        <template v-if="shownArchivedChannels.length">
-                            <DeskSidebarRow
-                                v-for="channel in shownArchivedChannels"
-                                :key="'slack-' + channel.id"
-                                :label="channel.name ?? ''"
-                                :workspace="channel.workspace"
-                                :href="route('grp.chat.staff.slack.show', channel.id)"
-                                icon="fal fa-archive"
-                                :unread="unreadOf(channel.id)"
-                                :is-active="isSelectedChannel(channel.id)"
-                                is-muted
-                                :is-starred="false"
-                                @toggle-star="toggleStar('slack-' + channel.id)" />
-                        </template>
-                    </section>
-    
-                    <section v-if="!isDesks && (!filterText || shownConversations.length || shownPrivateChannels.length || shownDirectChannels.length)" class="mt-1">
+                    <section v-if="(isGroups || isDirectsTab) && (!filterText || shownConversations.length || shownPrivateChannels.length || shownDirectChannels.length)" class="mt-1">
                         <DeskSidebarRow
                             v-for="channel in shownDirectChannels"
                             :key="'direct-' + channel.id"
@@ -708,11 +713,47 @@ onUnmounted(() => {
                             class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                             @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--desk-chip)] text-sm">+</span>
-                            <span class="truncate">{{ isGroups ? ctrans("New Verbation") : ctrans("Add coworkers") }}</span>
+                            <span class="truncate">{{ isGroups ? ctrans("New private V·Desk") : ctrans("Add coworkers") }}</span>
                         </button>
                     </section>
+
+                    <section v-if="isDesks && hasSlack && (!filterText || shownActiveChannels.length)" class="mt-1">
+                        <DeskSidebarRow
+                            v-for="channel in shownActiveChannels"
+                            :key="'slack-' + channel.id"
+                            :label="channel.name ?? ''"
+                            :workspace="channel.workspace"
+                            :href="route('grp.chat.staff.slack.show', channel.id)"
+                            icon="fal fa-hashtag"
+                            :unread="unreadOf(channel.id)"
+                            :has-draft="draftChannelIds.has(channel.id)"
+                            :is-active="isSelectedChannel(channel.id)"
+                            :is-starred="false"
+                            @toggle-star="toggleStar('slack-' + channel.id)" />
+                    </section>
     
-                    <section v-if="!isDesks && !isGroups && (filterText ? shownLegacyConversations.length : legacyConversations.length)" class="mt-3">
+                    <section v-if="isDesks && hasSlack && (filterText ? shownArchivedChannels.length : listedArchivedChannels.length)" class="mt-3">
+                        <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" v-if="!filterText" :aria-expanded="showArchived" @click="toggleSection('archived')">
+                            <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="!showArchived && '-rotate-90'" fixed-width aria-hidden="true" />
+                            <span>{{ ctrans("Archived (:count)", { count: String(listedArchivedChannels.length) }) }}</span>
+                        </button>
+                        <template v-if="shownArchivedChannels.length">
+                            <DeskSidebarRow
+                                v-for="channel in shownArchivedChannels"
+                                :key="'slack-' + channel.id"
+                                :label="channel.name ?? ''"
+                                :workspace="channel.workspace"
+                                :href="route('grp.chat.staff.slack.show', channel.id)"
+                                icon="fal fa-archive"
+                                :unread="unreadOf(channel.id)"
+                                :is-active="isSelectedChannel(channel.id)"
+                                is-muted
+                                :is-starred="false"
+                                @toggle-star="toggleStar('slack-' + channel.id)" />
+                        </template>
+                    </section>
+    
+                    <section v-if="isDirectsTab && (filterText ? shownLegacyConversations.length : legacyConversations.length)" class="mt-3">
                         <button v-if="!filterText" type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="showLegacy" @click="toggleSection('legacy-open')">
                             <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="!showLegacy && '-rotate-90'" fixed-width aria-hidden="true" />
                             <span class="flex-1 truncate">{{ ctrans("Legacy chats (:count)", { count: String(legacyConversations.length) }) }}</span>
@@ -734,7 +775,7 @@ onUnmounted(() => {
                     </section>
 
                     <Link
-                        v-if="!isDesks && !isGroups && taskThreadCount && !filterText"
+                        v-if="isDirectsTab && taskThreadCount && !filterText"
                         :href="route('grp.tasks.index')"
                         class="mx-2 mt-3 flex h-7 items-center gap-x-2 rounded-md px-4 text-[13px] hover:bg-[var(--desk-hover)]">
                         <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
@@ -879,7 +920,7 @@ onUnmounted(() => {
                     :thread-ts="slack_thread_ts"
                     :around-ts="slack_around_ts"
                     :reply-ts="slack_reply_ts"
-                    :live-channel="knownSlackLiveChannel"
+                    :live-channel="slack_channel.live_channel ?? knownSlackLiveChannel"
                     @read="onSlackChannelRead(slack_channel.id, $event)"
                     @back="router.visit(route('grp.chat.staff.slack.index'))" />
                 <VerbaHome v-else :key="homeTab" :tab="homeTab" :private-opt-in="!!slack_private_opt_in" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" @private-opt-in="isPrivateConsentOpen = true" />
@@ -923,6 +964,32 @@ onUnmounted(() => {
     --desk-strong: var(--vx-sidebar-strong, #ffffff);
     --desk-chip: var(--vx-sidebar-chip, rgba(255, 255, 255, 0.1));
     --desk-chip-strong: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.2));
+}
+
+.desk-palette .desk-kind-toggle {
+    display: flex;
+    background-color: var(--desk-chip);
+}
+
+.desk-palette .desk-kind-toggle :deep(.p-togglebutton) {
+    flex: 1 1 0;
+    color: var(--desk-text);
+}
+
+.desk-palette .desk-kind-toggle :deep(.p-togglebutton-content) {
+    justify-content: center;
+    padding: 0.125rem 0.5rem;
+}
+
+.desk-palette .desk-kind-toggle :deep(.p-togglebutton:not(.p-togglebutton-checked):hover) {
+    background-color: var(--desk-chip-strong);
+    color: var(--desk-strong);
+}
+
+.desk-palette .desk-kind-toggle :deep(.p-togglebutton-checked .p-togglebutton-content) {
+    background-color: var(--desk-active);
+    color: var(--desk-active-text);
+    box-shadow: none;
 }
 
 .desk-palette nav :deep(*) {

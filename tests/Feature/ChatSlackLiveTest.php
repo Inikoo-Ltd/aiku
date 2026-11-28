@@ -744,3 +744,57 @@ test('Public channels of another Slack workspace show only to people with an acc
     expect($bali->isVisibleTo($this->viewer))->toBeTrue()
         ->and($listed())->toContain($bali->id, $this->channel->id);
 });
+
+test('V·Desks list flags out of the list the public channels a Verba admin hid or kept for other organisations, lists them all to group-level staff, and still sends them so links, jump and search reach them, INI-595', function () {
+    $hidden = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CHID{$this->s}", 'name' => "hid-{$this->s}", 'is_member' => true, 'is_hidden_in_lists' => true]);
+    $kept   = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CORG{$this->s}", 'name' => "org-{$this->s}", 'is_member' => true]);
+    $kept->organisations()->sync([$this->organisation->id]);
+    $all    = fn () => collect(\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->channels($this->viewer));
+    $listed = fn () => $all()->where('in_list', true)->pluck('id');
+
+    expect($listed())->toContain($this->channel->id, $kept->id)->not->toContain($hidden->id)
+        ->and($all()->pluck('id'))->toContain($hidden->id, $kept->id)
+        ->and($hidden->isVisibleTo($this->viewer))->toBeTrue();
+
+    $other = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, array_merge(\App\Models\SysAdmin\Organisation::factory()->definition(), ['code' => 'o'.substr($this->s, -4), 'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP]));
+    $employee = \App\Models\HumanResources\Employee::factory()->create(['group_id' => $this->group->id, 'organisation_id' => $other->id]);
+    $this->viewer->employees()->attach($employee->id, ['group_id' => $this->group->id, 'organisation_id' => $other->id]);
+    expect($listed())->not->toContain($kept->id)
+        ->and($kept->isVisibleTo($this->viewer))->toBeTrue();
+
+    $kept->organisations()->sync([$this->organisation->id, $other->id]);
+    expect($listed())->toContain($kept->id)->not->toContain($hidden->id);
+
+});
+
+test('Verba settings are for Verba admins only and take public channels only, INI-595', function () {
+    $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GSET{$this->s}", 'name' => "secret-{$this->s}", 'is_public' => false, 'is_private' => true, 'is_member' => true]);
+    $admin   = User::factory()->create(['group_id' => $this->group->id, 'language_id' => $this->user->language_id]);
+    $admin->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::VERBA_ADMIN->value, $this->group));
+
+    actingAs($this->viewer)->get(route('grp.chat.staff.settings.index'))->assertForbidden();
+    actingAs($this->viewer)->patchJson(route('grp.chat.staff.settings.channels.update', $this->channel), ['is_hidden_in_lists' => true])->assertForbidden();
+
+    actingAs($admin)->get(route('grp.chat.staff.settings.index'))->assertSuccessful();
+    actingAs($admin)->patchJson(route('grp.chat.staff.settings.channels.update', $this->channel), ['is_hidden_in_lists' => true, 'organisation_ids' => [$this->organisation->id]])
+        ->assertSuccessful()->assertJson(['is_hidden_in_lists' => true, 'organisation_ids' => [$this->organisation->id]]);
+    actingAs($admin)->patchJson(route('grp.chat.staff.settings.channels.update', $private), ['is_hidden_in_lists' => true])->assertForbidden();
+    actingAs($admin)->patchJson(route('grp.chat.staff.settings.channels.update', $this->channel), ['organisation_ids' => [999999]])->assertUnprocessable();
+
+    expect($this->channel->refresh()->is_hidden_in_lists)->toBeTrue()
+        ->and($private->refresh()->is_hidden_in_lists)->toBeFalse();
+});
+
+test('Live updates of another workspace channel go on its own broadcast channel, offered only to people with an account there, INI-595', function () {
+    \Illuminate\Support\Facades\Config::set('services.slack.team_id', 'TMAIN');
+    \Illuminate\Support\Facades\Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-secret', 'name_suffix' => 'awa', 'name' => 'AW Advantage']]);
+    $bali = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWALIVE{$this->s}", 'name' => "live-bali-{$this->s}", 'slack_team_id' => 'TAWA', 'is_public' => true, 'is_member' => true]);
+    $teamLive = fn () => value(\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->listProps($this->group, $this->viewer)['slack_live_team_channels']);
+
+    expect(\App\Events\SlackChannelMessageChanged::channelName($bali))->toBe("grp.slack.{$this->group->id}.team.TAWA")
+        ->and(\App\Events\SlackChannelMessageChanged::channelName($this->channel))->toBe("grp.slack.{$this->group->id}")
+        ->and($teamLive())->toBe([]);
+
+    SlackUser::create(['slack_id' => "UVIEWAWA{$this->s}", 'user_id' => $this->viewer->id, 'email' => $this->viewer->email, 'real_name' => 'Viewer Person', 'data' => ['team_id' => 'TAWA']]);
+    expect($teamLive())->toBe(["grp.slack.{$this->group->id}.team.TAWA"]);
+});

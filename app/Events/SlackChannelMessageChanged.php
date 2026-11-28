@@ -41,7 +41,16 @@ class SlackChannelMessageChanged implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [new PrivateChannel('grp.slack.'.$this->channel->group_id)];
+        return [new PrivateChannel(self::channelName($this->channel))];
+    }
+
+    /**
+     * Main workspace channels go on grp.slack.{group}; another workspace's go on its own grp.slack.{group}.team.{team},
+     * which only people with an account there may join (INI-595), so their messages never reach the others.
+     */
+    public static function channelName(SlackChannel $channel): string
+    {
+        return 'grp.slack.'.$channel->group_id.($channel->slack_team_id ? '.team.'.$channel->slack_team_id : '');
     }
 
     public function broadcastAs(): string

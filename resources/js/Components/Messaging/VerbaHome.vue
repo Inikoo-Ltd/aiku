@@ -10,7 +10,7 @@ import { Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { formatDistanceToNow } from "date-fns"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck } from "@fal"
+import { faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck, faLock } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import Image from "@/Common/Components/Image.vue"
@@ -22,7 +22,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useStaffCalls, type StaffCallKind } from "@/Stores/staff-calls"
 import { readCachedHome, writeCachedHome } from "@/Composables/useStaffChatCache"
 
-library.add(faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck)
+library.add(faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck, faLock)
 
 interface Story {
     id: number
@@ -215,7 +215,7 @@ const createMeetingLink = async () => {
                 <Button type="tertiary" :label="ctrans('New Verb')" class="bg-white" @click="emit('newVerb')">
                     <template #icon><FontAwesomeIcon icon="fal fa-edit" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                 </Button>
-                <Button type="tertiary" :label="ctrans('New Verbation')" class="bg-white" @click="emit('newVerbration')">
+                <Button type="tertiary" :label="ctrans('New private V·Desk')" class="bg-white" @click="emit('newVerbration')">
                     <template #icon><FontAwesomeIcon icon="fal fa-users" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                 </Button>
                 <span class="mx-1 hidden h-6 w-px bg-gray-200 sm:block" aria-hidden="true" />
@@ -249,15 +249,15 @@ const createMeetingLink = async () => {
 
             <div class="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
                 <section v-if="tab" class="min-w-0 space-y-4">
-                    <div v-if="privateOptIn && tab !== 'desks'" class="rounded-xl border border-gray-200 bg-white p-5">
+                    <div v-if="privateOptIn" class="rounded-xl border border-gray-200 bg-white p-5">
                         <h2 class="text-base font-semibold text-gray-900">{{ ctrans("Bring your Slack conversations") }}</h2>
-                        <p class="mt-1 max-w-prose text-sm text-gray-600">{{ tab === "groups" ? ctrans("Say yes once and the Slack private channels you are in come to Verbations. Only the people in each channel see it.") : ctrans("Say yes once and your Slack direct messages and group chats come to V·Ds. Only the people in each conversation see them.") }}</p>
+                        <p class="mt-1 max-w-prose text-sm text-gray-600">{{ tab !== "directs" ? ctrans("Say yes once and the Slack private channels you are in come to V·Desks. Only the people in each channel see it.") : ctrans("Say yes once and your Slack direct messages and group chats come to V·Ds. Only the people in each conversation see them.") }}</p>
                         <Button type="tertiary" class="mt-4 bg-white" :label="ctrans('Read and say yes')" @click="emit('privateOptIn')">
                             <template #icon><FontAwesomeIcon :icon="faSlack" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </div>
 
-                    <div v-if="tab === 'groups'" class="rounded-xl border border-gray-200 bg-white p-5">
+                    <div v-if="tab !== 'directs'" class="rounded-xl border border-gray-200 bg-white p-5">
                         <h2 class="text-base font-semibold text-gray-900">{{ ctrans("Bring a Slack private channel") }}</h2>
                         <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm text-gray-600">
                             <li>{{ ctrans("Open the private channel in Slack.") }}</li>
@@ -267,10 +267,10 @@ const createMeetingLink = async () => {
                     </div>
 
                     <div class="flex flex-col items-center rounded-xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center text-gray-500">
-                        <FontAwesomeIcon :icon="tab === 'desks' ? 'fal fa-hashtag' : tab === 'groups' ? 'fal fa-users' : 'fal fa-edit'" class="mb-3 text-3xl text-gray-400" fixed-width aria-hidden="true" />
-                        <p class="text-sm">{{ tab === "desks" ? ctrans("Pick a V·Desk on the left, or search every channel at the top.") : tab === "groups" ? ctrans("Pick a Verbation on the left, or start a new one.") : ctrans("Pick a chat on the left, or start a new Verb.") }}</p>
-                        <Button v-if="tab !== 'desks'" type="tertiary" class="mt-4 bg-white" :label="tab === 'groups' ? ctrans('New Verbation') : ctrans('New Verb')" @click="tab === 'groups' ? emit('newVerbration') : emit('newVerb')">
-                            <template #icon><FontAwesomeIcon :icon="tab === 'groups' ? 'fal fa-users' : 'fal fa-edit'" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                        <FontAwesomeIcon :icon="tab !== 'directs' ? 'fal fa-hashtag' : 'fal fa-edit'" class="mb-3 text-3xl text-gray-400" fixed-width aria-hidden="true" />
+                        <p class="text-sm">{{ tab !== "directs" ? ctrans("Pick a V·Desk on the left, search every channel at the top, or start a private one.") : ctrans("Pick a chat on the left, or start a new Verb.") }}</p>
+                        <Button type="tertiary" class="mt-4 bg-white" :label="tab !== 'directs' ? ctrans('New private V·Desk') : ctrans('New Verb')" @click="tab !== 'directs' ? emit('newVerbration') : emit('newVerb')">
+                            <template #icon><FontAwesomeIcon :icon="tab !== 'directs' ? 'fal fa-lock' : 'fal fa-edit'" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                         </Button>
                     </div>
                 </section>

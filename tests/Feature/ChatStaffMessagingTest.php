@@ -238,12 +238,13 @@ describe('staff messaging', function () {
         $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
         $send         = fn (string $body) => actingAs($this->user)
             ->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => $body]);
+        $before       = $conversation->messages()->count();
 
         $send(str_repeat('😀', 5000))->assertSuccessful();
         $send('  '.str_repeat('a', 5000)."\n")->assertSuccessful();
         $send(str_repeat('a', 5001))->assertUnprocessable()->assertJsonValidationErrors('body');
 
-        expect($conversation->messages()->count())->toBe(2);
+        expect($conversation->messages()->count())->toBe($before + 2);
     });
 
     test('empty conversation is listed only for its creator until a message is sent', function () {
@@ -2135,7 +2136,7 @@ test('Verba lives at /vx, /chat/staff redirects there permanently keeping the pa
     $verba      = collect($navigation['verba']['topMenu']['subSections'])->pluck('label')->all();
     $chat       = collect($navigation['chat']['topMenu']['subSections'])->pluck('label')->all();
 
-    expect($verba)->toBe([__('News'), 'V·Desks', 'Verbations', 'V·Ds', ...(App\Models\Chat\StaffCall::isEnabled() ? [__('Calls')] : []), __('Analytics')])
+    expect($verba)->toBe([__('News'), 'V·Desks', 'V·Ds', ...(App\Models\Chat\StaffCall::isEnabled() ? [__('Calls')] : []), __('Analytics'), ...($this->user->authTo('verba-admin') ? [__('Settings')] : [])])
         ->and($chat)->not->toContain(__('Verba'));
 });
 

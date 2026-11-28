@@ -26,6 +26,7 @@ use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -118,8 +119,13 @@ class ShowStaffSlackChannels extends OrgAction
      */
     public function channels(User $user, bool $private = false, bool $direct = false): array
     {
+        $public   = !$direct && !$private;
         $channels = ($direct ? SlackChannel::directVisibleTo($user) : ($private ? SlackChannel::privateVisibleTo($user) : SlackChannel::visibleTo($user)))
             ->select(['id', 'slack_id', 'name', 'is_archived', 'data', 'slack_team_id'])
+            ->when($public, function (Builder $query) use ($user) {
+                $inList = $this->inListQuery($user);
+                $query->selectRaw('slack_channels.id in ('.$inList->toSql().') as in_list', $inList->getBindings());
+            })
             ->addSelect(['last_message_at' => SlackMessage::select('sent_at')
                 ->whereColumn('slack_messages.slack_channel_id', 'slack_channels.id')
                 ->whereNull('deleted_at')
@@ -146,12 +152,30 @@ class ShowStaffSlackChannels extends OrgAction
                 'topic'           => ($channel->data['topic']['value'] ?? null) ?: ($channel->data['purpose']['value'] ?? null) ?: null,
                 'is_archived'     => $channel->is_archived,
                 'workspace'       => $channel->slack_team_id ? SlackWorkspace::forTeam($channel->slack_team_id)?->name : null,
+                'in_list'         => !$public || (bool) $channel->in_list,
                 'last_message_at' => $channel->last_message_at ? Carbon::parse($channel->last_message_at)->toIso8601String() : null,
                 'unread_count'    => $reads[$channel->id]['count'] ?? 0,
                 'last_read_ts'    => $reads[$channel->id]['last_read_ts'] ?? null,
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Public channels that belong in the person's V·Desks list: not hidden by a Verba admin, and shown to everyone or to
+     * one of the person's organisations (INI-595). The page still gets every channel the person may read, flagged
+     * in_list, so links, jump and search reach the rest; the sidebar also keeps starred, open and unread ones.
+     */
+    private function inListQuery(User $user): \Illuminate\Database\Query\Builder
+    {
+        $organisationIds = $user->employees()->pluck('employees.organisation_id')->map(fn ($id) => (int) $id)->all();
+
+        return SlackChannel::query()->select('slack_channels.id')
+            ->where('is_hidden_in_lists', false)
+            ->when($organisationIds, fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->whereDoesntHave('organisations')
+                ->orWhereHas('organisations', fn (Builder $query) => $query->whereIn('organisations.id', $organisationIds))))
+            ->toBase();
     }
 
     /**
@@ -168,21 +192,23 @@ class ShowStaffSlackChannels extends OrgAction
         $starred = Arr::get($user->settings, 'desk_starred') ?? [];
 
         if (!$user->status) {
-            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_listed_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred, 'slack_private_opt_in' => null];
+            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_listed_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'slack_live_team_channels' => [], 'desk_starred' => $starred, 'slack_private_opt_in' => null];
         }
 
         $memo        = null;
         $channels    = function () use (&$memo, $user): array {
             return $memo ??= $this->channels($user);
         };
-        $liveChannel = fn () => $channels() === [] ? null : 'grp.slack.'.$group->id;
+        $liveChannel = fn () => collect($channels())->contains(fn (array $channel) => $channel['workspace'] === null) ? 'grp.slack.'.$group->id : null;
+        $teamLive    = fn (): array => SlackChannel::visibleTo($user)->whereNotNull('slack_team_id')->distinct()->pluck('slack_team_id')
+            ->map(fn (string $teamId) => 'grp.slack.'.$group->id.'.team.'.$teamId)->values()->all();
         $private     = fn (): array => $this->channels($user, private: true);
         $direct      = fn (): array => $this->channels($user, direct: true);
         $listed      = fn (): array => $this->listedChannels($user);
 
         return $deferred
-            ? ['slack_private_opt_in' => Inertia::defer(fn () => $this->privateOptIn($user), 'slack'), 'slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_listed_channels' => Inertia::defer($listed, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
-            : ['slack_private_opt_in' => $this->privateOptIn($user), 'slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
+            ? ['slack_private_opt_in' => Inertia::defer(fn () => $this->privateOptIn($user), 'slack'), 'slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_listed_channels' => Inertia::defer($listed, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'slack_live_team_channels' => Inertia::defer($teamLive, 'slack'), 'desk_starred' => $starred]
+            : ['slack_private_opt_in' => $this->privateOptIn($user), 'slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'slack_live_team_channels' => $teamLive, 'desk_starred' => $starred];
     }
 
     /**
@@ -295,6 +321,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
                     'is_archived'  => $slackChannel->is_archived,
                     'is_private'   => $slackChannel->is_private,
+                    'live_channel' => $slackChannel->is_public ? \App\Events\SlackChannelMessageChanged::channelName($slackChannel) : null,
                     'is_listed'    => $slackChannel->is_private && !$slackChannel->direct_type ? $slackChannel->is_listed : null,
                     'brought_by'   => $slackChannel->is_private && $slackChannel->brought_by_user_id ? User::whereKey($slackChannel->brought_by_user_id)->first()?->chatName() : null,
                     'member_count' => $slackChannel->members()->count(),

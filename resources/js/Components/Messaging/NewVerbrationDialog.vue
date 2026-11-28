@@ -59,7 +59,7 @@ const submit = async () => {
 </script>
 
 <template>
-    <Dialog v-model:visible="visible" modal :header="ctrans('New Verbation')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
+    <Dialog v-model:visible="visible" modal :header="ctrans('New private V·Desk')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
         <div class="space-y-4 text-sm">
             <p class="text-gray-500">{{ ctrans("A Slack private channel, created as you: only the people you invite can see it, in Slack and in Verba.") }}</p>
             <label class="block space-y-1">

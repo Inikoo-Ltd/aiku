@@ -30,6 +30,7 @@ enum RolesEnum: string
     case SYSTEM_ADMIN = 'system-admin';
 
     case GROUP_WEBMASTER = 'group-webmaster';
+    case VERBA_ADMIN = 'verba-admin';
 
     case HELP_DESK_CLERK = 'help-desk-clerk';
     case HELP_DESK_SUPERVISOR = 'help-desk-supervisor';
@@ -145,6 +146,7 @@ enum RolesEnum: string
             RolesEnum::GROUP_ADMIN => __('Group admin'),
             RolesEnum::SYSTEM_ADMIN => __('System admin'),
             RolesEnum::GROUP_WEBMASTER => __('Group webmaster'),
+            RolesEnum::VERBA_ADMIN => __('Verba admin'),
             RolesEnum::HELP_DESK_CLERK => __('Engineer'),
             RolesEnum::HELP_DESK_SUPERVISOR => __('Lead engineer'),
             RolesEnum::QA => __('QA'),
@@ -239,6 +241,7 @@ enum RolesEnum: string
             GroupPermissionsEnum::MASTERS,
             GroupPermissionsEnum::COMPLIANCE,
             GroupPermissionsEnum::GROUP_WEBMASTER,
+            GroupPermissionsEnum::VERBA_ADMIN,
         ];
     }
 
@@ -251,6 +254,9 @@ enum RolesEnum: string
             ],
             RolesEnum::GROUP_WEBMASTER => [
                 GroupPermissionsEnum::GROUP_WEBMASTER
+            ],
+            RolesEnum::VERBA_ADMIN => [
+                GroupPermissionsEnum::VERBA_ADMIN
             ],
             RolesEnum::HELP_DESK_CLERK => [...self::groupAdminPermissions(), GroupPermissionsEnum::HELP_DESK_RESOLVE],
             RolesEnum::QA => [...self::groupAdminPermissions(), GroupPermissionsEnum::HELP_DESK_QA],
@@ -664,6 +670,7 @@ enum RolesEnum: string
             RolesEnum::GROUP_ADMIN,
             RolesEnum::SYSTEM_ADMIN,
             RolesEnum::GROUP_WEBMASTER,
+            RolesEnum::VERBA_ADMIN,
             RolesEnum::HELP_DESK_CLERK,
             RolesEnum::HELP_DESK_SUPERVISOR,
             RolesEnum::QA,

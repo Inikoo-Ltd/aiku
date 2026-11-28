@@ -38,6 +38,34 @@ export const myReactions = (reactors: Record<string, number[]> | undefined, user
 
 export const isInSlackStream = (message: SlackStreamMessage) => !message.thread_ts || message.thread_ts === message.ts || message.is_broadcast
 
+export const useSlackLiveMany = (channelNames: () => string[], handler: (event: SlackLiveEvent) => void) => {
+    const joined = new Set<string>()
+    const leave = (name: string) => {
+        if (!window.Echo) return
+        window.Echo.private(name).stopListening(SLACK_LIVE_EVENT, handler)
+        const left = (listeners.get(name) ?? 1) - 1
+        if (left <= 0) {
+            listeners.delete(name)
+            window.Echo.leave(name)
+        } else {
+            listeners.set(name, left)
+        }
+        joined.delete(name)
+    }
+    watch(() => channelNames().join("|"), () => {
+        const wanted = new Set(channelNames())
+        joined.forEach((name) => wanted.has(name) || leave(name))
+        if (!window.Echo) return
+        wanted.forEach((name) => {
+            if (joined.has(name)) return
+            window.Echo.private(name).listen(SLACK_LIVE_EVENT, handler)
+            listeners.set(name, (listeners.get(name) ?? 0) + 1)
+            joined.add(name)
+        })
+    }, { immediate: true })
+    onUnmounted(() => [...joined].forEach(leave))
+}
+
 export const useSlackLive = (channelName: () => string | null | undefined, handler: (event: SlackLiveEvent) => void) => {
     let current: string | null = null
     const stop = () => {

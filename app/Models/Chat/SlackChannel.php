@@ -13,7 +13,9 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\SysAdmin\Organisation;
 
 /**
  * A public Slack channel whose messages are kept in aiku.
@@ -35,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $brought_by_user_id
  * @property bool $is_listed
  * @property string|null $slack_team_id
+ * @property bool $is_hidden_in_lists
  */
 class SlackChannel extends Model
 {
@@ -69,6 +72,7 @@ class SlackChannel extends Model
         'is_ignored' => false,
         'is_private' => false,
         'is_listed'  => false,
+        'is_hidden_in_lists' => false,
     ];
 
     protected function casts(): array
@@ -80,6 +84,7 @@ class SlackChannel extends Model
             'is_ignored'        => 'boolean',
             'is_private'        => 'boolean',
             'is_listed'         => 'boolean',
+            'is_hidden_in_lists' => 'boolean',
             'deleted_in_slack_at' => 'datetime',
             'data'              => 'array',
             'history_synced_at' => 'datetime',
@@ -99,6 +104,15 @@ class SlackChannel extends Model
     public function members(): HasMany
     {
         return $this->hasMany(SlackChannelMember::class);
+    }
+
+    /**
+     * The organisations whose staff get this public channel in their V·Desks list (INI-595), set by a Verba admin. None
+     * means everyone. It only shapes the list: the channel stays open by link and search to all who may read it.
+     */
+    public function organisations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organisation::class, 'slack_channel_organisations');
     }
 
     public function scopeKept(Builder $query): Builder

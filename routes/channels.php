@@ -77,7 +77,11 @@ Broadcast::channel('grp.slack-direct.{userID}', function (User $user, int $userI
 });
 
 Broadcast::channel('grp.slack.{groupId}', function (User $user, int $groupId) {
-    return $user->group_id === $groupId && SlackChannel::visibleTo($user)->exists();
+    return $user->group_id === $groupId && SlackChannel::visibleTo($user)->whereNull('slack_team_id')->exists();
+});
+
+Broadcast::channel('grp.slack.{groupId}.team.{teamId}', function (User $user, int $groupId, string $teamId) {
+    return $user->group_id === $groupId && SlackChannel::visibleTo($user)->where('slack_team_id', $teamId)->exists();
 });
 
 Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, int $employeeID) {

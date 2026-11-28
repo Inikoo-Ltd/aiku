@@ -228,7 +228,7 @@ const callFacts = computed(() => [
 const chatFacts = computed(() => [
 	{ label: ctrans("Chats with messages"), value: locale.number(current.value.conversations) },
 	{ label: ctrans("Verbs in 1:1 chats"), value: locale.number(current.value.direct_messages) },
-	{ label: ctrans("Verbs in Verbations"), value: locale.number(current.value.group_messages) },
+	{ label: ctrans("Verbs in private V·Desks"), value: locale.number(current.value.group_messages) },
 	{ label: ctrans("Slack messages sent from aiku"), value: locale.number(current.value.slack_from_aiku) },
 ])
 </script>

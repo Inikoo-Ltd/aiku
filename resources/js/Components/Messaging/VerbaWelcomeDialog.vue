@@ -10,12 +10,12 @@ import axios from "axios"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faHashtag, faDrawSquare, faComments, faCheck, faQuestionCircle, faLongArrowRight, faExternalLink } from "@fal"
+import { faHashtag, faComments, faCheck, faQuestionCircle, faLongArrowRight, faExternalLink } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLayoutStore } from "@/Stores/layout"
 
-library.add(faHashtag, faDrawSquare, faComments, faCheck, faQuestionCircle, faLongArrowRight, faExternalLink)
+library.add(faHashtag, faComments, faCheck, faQuestionCircle, faLongArrowRight, faExternalLink)
 
 const layout = useLayoutStore()
 const visible = ref(false)
@@ -23,8 +23,7 @@ const visible = ref(false)
 const isVerbaRoute = computed(() => (layout.currentRoute ?? "").startsWith("grp.chat.staff."))
 
 const lines = computed(() => [
-    { meaning: ctrans("Public channels"), name: "V·Desks", icon: "fal fa-hashtag", colour: "#7c5cff" },
-    { meaning: ctrans("Private channels"), name: "Verbations", icon: "fal fa-draw-square", colour: "#ff5a7a" },
+    { meaning: ctrans("Channels, public and private"), name: "V·Desks", icon: "fal fa-hashtag", colour: "#7c5cff" },
     { meaning: ctrans("Direct messages"), name: "V·Ds", icon: "fal fa-comments", colour: "#14c2a3" },
 ])
 
