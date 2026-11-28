@@ -1,8 +1,8 @@
 ---
 title: De Slack a Verba
 summary: Si vienes de Slack - cómo se llama en Verba cada cosa de Slack, cómo enlazar tu cuenta, cómo traer tus conversaciones, qué sigue siendo solo de lectura y cómo mover tus notificaciones. Durante un tiempo puedes usar las dos.
-date: 2026-11-27
-source_date: 2026-11-27
+date: 2026-11-28
+source_date: 2026-11-28
 tags: chat, messaging, verba
 category: help-desk
 series: Verba
@@ -18,7 +18,7 @@ Si conoces Slack, ya conoces Verba. Durante un tiempo puedes usar las dos: los c
 | En Slack | En Verba |
 | --- | --- |
 | Canal público de Slack | **V·Desk** |
-| Canal privado de Slack | **Verbation** |
+| Canal privado de Slack | **V·Desk privado** |
 | Mensaje directo o mensaje directo de grupo de Slack | **V·D** |
 | Mensaje de Slack | **Verb** |
 
@@ -36,7 +36,7 @@ Para que tus Verbs aparezcan en Slack como tuyos, y no a través de la app de ai
 
 <h2 id="bring">Traer tus conversaciones de Slack</h2>
 
-Tus mensajes directos, chats de grupo y canales privados de Slack llegan a Verba solo si tú dices que sí: en la pestaña **V·Ds** o **Verbations**, pulsa **Read and say yes** en **Bring your Slack conversations**. Un canal privado también se puede traer entero para todos los que están en él: escribe `/invite @aiku` en ese canal en Slack. Detalles en [Verbations y V·Ds](/docs/verba-verbations-and-v-ds-es#slack).
+Tus mensajes directos, chats de grupo y canales privados de Slack llegan a Verba solo si tú dices que sí: en la pestaña **V·Ds** o **V·Desks**, pulsa **Read and say yes** en **Bring your Slack conversations**. Un canal privado también se puede traer entero para todos los que están en él: escribe `/invite @aiku` en ese canal en Slack. Detalles en [V·Desks privados y V·Ds](/docs/verba-verbations-and-v-ds-es#slack).
 
 <h2 id="notifications">Mover tus notificaciones</h2>
 

@@ -1,7 +1,7 @@
 ---
 title: Asking a colleague or a department for something
 summary: Raise a task instead of a Slack message when you need someone in another team to do something - it has one owner, a thread, and a done - and work through the tasks other people sent you.
-date: 2026-09-16
+date: 2026-11-28
 tags: tasks, chat, messaging, help desk
 category: help-desk
 help_routes: grp.tasks
@@ -13,7 +13,7 @@ A <b>task</b> is a request from one member of staff to another, or to a whole de
 
 ## Why tasks and not Slack
 
-A request written in Slack has no owner and no end. It scrolls away, nobody knows if it was seen, and a week later someone asks again. A task is the same sentence with an owner and a done, so both sides can stop worrying about it. The discussion still happens in chat: every task opens a staff chat conversation named after it, with the same translation, replies, photos and quick replies described in [Verbations and V·Ds](/docs/verba-verbations-and-v-ds).
+A request written in Slack has no owner and no end. It scrolls away, nobody knows if it was seen, and a week later someone asks again. A task is the same sentence with an owner and a done, so both sides can stop worrying about it. The discussion still happens in chat: every task opens a staff chat conversation named after it, with the same translation, replies, photos and quick replies described in [Private V·Desks and V·Ds](/docs/verba-verbations-and-v-ds).
 
 ## Raising a task
 

@@ -1,8 +1,8 @@
 ---
 title: Verba News (novinky)
-summary: Prvá záložka Verby - zaujímavosti tohto týždňa z vašich chatov a kanálov, oslavy, vaše posledné chaty a tlačidlá na začatie Verbu, Verbation, hovoru alebo odkazu na stretnutie jedným kliknutím.
-date: 2026-11-27
-source_date: 2026-11-27
+summary: Prvá záložka Verby - zaujímavosti tohto týždňa z vašich chatov a kanálov, oslavy, vaše posledné chaty a tlačidlá na začatie Verbu, súkromného V·Desku, hovoru alebo odkazu na stretnutie jedným kliknutím.
+date: 2026-11-28
+source_date: 2026-11-28
 tags: chat, messaging, verba
 category: help-desk
 series: Verba
@@ -18,7 +18,7 @@ order: 2
 Navrchu v **News** sú tlačidlá:
 
 - **New Verb**: napíšte kolegovi. Vyberte meno a otvorí sa V·D.
-- **New Verbation**: vytvorí súkromnú skupinu. Pozrite si [Verbations a V·Ds](/docs/verba-verbations-and-v-ds-sk).
+- **New private V·Desk**: vytvorí súkromný kanál. Pozrite si [Súkromné V·Desks a V·Ds](/docs/verba-verbations-and-v-ds-sk).
 - **Call** a **Video call**: napíšte meno a hovor sa začne. Pozrite si [Hovory](/docs/verba-calls-sk).
 - **New meeting link**: vytvorí odkaz a skopíruje ho za vás (tlačidlo sa zmení na **Link copied**). Pošlite ho komukoľvek: kolegovia vstúpia rovno, ľudia mimo firmy požiadajú o vstup a niekto zo stretnutia ich pustí dnu. **Open the meeting** vás tam zavedie.
 
@@ -38,7 +38,7 @@ Na boku **Recent chats** ukazuje ľudí, s ktorými ste naposledy hovorili jeden
 
 <h2 id="slack">Preniesť vaše konverzácie zo Slacku</h2>
 
-Keď otvoríte záložku **V·Ds** alebo **Verbations** bez vybraného chatu, zobrazuje sa karta **Bring your Slack conversations**, kým neodpoviete áno. Vysvetlenie nájdete v [Verbations a V·Ds](/docs/verba-verbations-and-v-ds-sk#slack).
+Keď otvoríte záložku **V·Ds** alebo **V·Desks** bez vybraného chatu, zobrazuje sa karta **Bring your Slack conversations**, kým neodpoviete áno. Vysvetlenie nájdete v [Súkromné V·Desks a V·Ds](/docs/verba-verbations-and-v-ds-sk#slack).
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>

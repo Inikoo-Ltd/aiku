@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasHistory;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * A public Slack channel whose messages are kept in aiku.
@@ -39,8 +41,24 @@ use App\Models\SysAdmin\Organisation;
  * @property string|null $slack_team_id
  * @property bool $is_hidden_in_lists
  */
-class SlackChannel extends Model
+class SlackChannel extends Model implements Auditable
 {
+    use HasHistory;
+
+    /**
+     * Only what a Verba admin changes in Settings (INI-595) is audited; the Slack sync's own changes are not history.
+     */
+    protected array $auditInclude = [
+        'is_hidden_in_lists',
+    ];
+
+    protected array $auditEvents = ['updated'];
+
+    public function generateTags(): array
+    {
+        return ['chat'];
+    }
+
     /**
      * Slack's own name, except that a channel of another workspace whose name a main workspace channel already has
      * reads name-suffix (general-awa) in aiku (INI-540). Slack keeps its name; the column stores Slack's.

@@ -1,8 +1,8 @@
 ---
 title: Pedir algo a un compañero o a un departamento
 summary: Levanta una tarea en lugar de un mensaje de Slack cuando necesitas que alguien de otro equipo haga algo - tiene un responsable, un hilo y un final - y gestiona las tareas que otros te han enviado.
-date: 2026-09-16
-source_date: 2026-09-16
+date: 2026-11-28
+source_date: 2026-11-28
 tags: tasks, chat, messaging, help desk
 category: help-desk
 ---
@@ -13,7 +13,7 @@ Una <b>task</b> (tarea) es una petición de un miembro del personal a otro, o a 
 
 ## Por qué tareas y no Slack
 
-Una petición escrita en Slack no tiene responsable ni final. Se pierde en el desplazamiento, nadie sabe si se ha visto, y una semana después alguien vuelve a preguntar. Una tarea es la misma frase con un responsable y un final, para que ambas partes puedan dejar de preocuparse por ella. La conversación sigue pasando en el chat: cada tarea abre una conversación de chat interno con su mismo nombre, con la misma traducción, respuestas, fotos y respuestas rápidas descritas en [Verbations y V·Ds](/docs/verba-verbations-and-v-ds-es).
+Una petición escrita en Slack no tiene responsable ni final. Se pierde en el desplazamiento, nadie sabe si se ha visto, y una semana después alguien vuelve a preguntar. Una tarea es la misma frase con un responsable y un final, para que ambas partes puedan dejar de preocuparse por ella. La conversación sigue pasando en el chat: cada tarea abre una conversación de chat interno con su mismo nombre, con la misma traducción, respuestas, fotos y respuestas rápidas descritas en [V·Desks privados y V·Ds](/docs/verba-verbations-and-v-ds-es).
 
 ## Levantar una tarea
 

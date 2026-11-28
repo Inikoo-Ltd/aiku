@@ -767,7 +767,7 @@ test('V·Desks list flags out of the list the public channels a Verba admin hid 
 
 });
 
-test('Verba settings are for Verba admins only and take public channels only, INI-595', function () {
+test('Verba settings are for Verba admins only, take public channels only and record who changed each channel, INI-595', function () {
     $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GSET{$this->s}", 'name' => "secret-{$this->s}", 'is_public' => false, 'is_private' => true, 'is_member' => true]);
     $admin   = User::factory()->create(['group_id' => $this->group->id, 'language_id' => $this->user->language_id]);
     $admin->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(\App\Enums\SysAdmin\Authorisation\RolesEnum::VERBA_ADMIN->value, $this->group));
@@ -783,6 +783,13 @@ test('Verba settings are for Verba admins only and take public channels only, IN
 
     expect($this->channel->refresh()->is_hidden_in_lists)->toBeTrue()
         ->and($private->refresh()->is_hidden_in_lists)->toBeFalse();
+
+    $audits = \App\Models\Helpers\Audit::where('auditable_type', 'SlackChannel')->where('auditable_id', $this->channel->id)->get();
+    expect($audits->pluck('user_id')->unique()->all())->toBe([$admin->id])
+        ->and($audits->pluck('new_values')->collapse()->all())->toMatchArray(['is_hidden_in_lists' => true, 'shows_to' => $this->organisation->name]);
+
+    actingAs($admin)->get(route('grp.chat.staff.settings.index'))->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->where('channels.data', fn ($rows) => collect($rows)->firstWhere('id', $this->channel->id)['last_change']['by'] === ($admin->contact_name ?? null)));
 });
 
 test('Live updates of another workspace channel go on its own broadcast channel, offered only to people with an account there, INI-595', function () {

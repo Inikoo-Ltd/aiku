@@ -401,6 +401,7 @@ class AppServiceProvider extends ServiceProvider
                 'WhatsappSubscriber'               => 'App\Models\Comms\WhatsappSubscriber',
                 'MetaChatSession'                  => 'App\Models\Chat\MetaChatSession',
                 'ChatSession'                      => 'App\Models\Chat\ChatSession',
+                'SlackChannel'                     => 'App\Models\Chat\SlackChannel',
 
                 // Catalogue
                 'Subscription'                     => 'App\Models\Catalogue\Subscription',

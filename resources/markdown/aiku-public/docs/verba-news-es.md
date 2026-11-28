@@ -1,8 +1,8 @@
 ---
 title: Verba News
-summary: La primera pestaña de Verba - lo más destacado de esta semana en tus chats y canales, celebraciones, tus chats recientes y botones para empezar con un clic un Verb, una Verbation, una llamada o un enlace de reunión.
-date: 2026-11-27
-source_date: 2026-11-27
+summary: La primera pestaña de Verba - lo más destacado de esta semana en tus chats y canales, celebraciones, tus chats recientes y botones para empezar con un clic un Verb, un V·Desk privado, una llamada o un enlace de reunión.
+date: 2026-11-28
+source_date: 2026-11-28
 tags: chat, messaging, verba
 category: help-desk
 series: Verba
@@ -18,7 +18,7 @@ order: 2
 Arriba en **News** hay botones:
 
 - **New Verb**: escribe a un compañero. Elige un nombre y se abre el V·D.
-- **New Verbation**: crea un grupo privado. Consulta [Verbations y V·Ds](/docs/verba-verbations-and-v-ds-es).
+- **New private V·Desk**: crea un canal privado. Consulta [V·Desks privados y V·Ds](/docs/verba-verbations-and-v-ds-es).
 - **Call** y **Video call**: escribe un nombre y empieza la llamada. Consulta [Llamadas](/docs/verba-calls-es).
 - **New meeting link**: crea un enlace y lo copia por ti (el botón cambia a **Link copied**). Envíaselo a quien quieras: los compañeros entran directamente, las personas de fuera de la empresa piden unirse y alguien de la reunión las deja entrar. **Open the meeting** te lleva a la reunión.
 
@@ -38,7 +38,7 @@ A un lado, **Recent chats** muestra las últimas personas con las que has hablad
 
 <h2 id="slack">Traer tus conversaciones de Slack</h2>
 
-Cuando abres la pestaña **V·Ds** o **Verbations** sin elegir ningún chat, aparece una tarjeta **Bring your Slack conversations** hasta que respondes que sí. Se explica en [Verbations y V·Ds](/docs/verba-verbations-and-v-ds-es#slack).
+Cuando abres la pestaña **V·Ds** o **V·Desks** sin elegir ningún chat, aparece una tarjeta **Bring your Slack conversations** hasta que respondes que sí. Se explica en [V·Desks privados y V·Ds](/docs/verba-verbations-and-v-ds-es#slack).
 
 <aside class="wayfinder"><strong>Dónde hacer clic en aiku</strong>
 <ul>

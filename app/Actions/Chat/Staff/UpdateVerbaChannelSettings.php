@@ -11,6 +11,8 @@ namespace App\Actions\Chat\Staff;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Models\Chat\SlackChannel;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -53,7 +55,15 @@ class UpdateVerbaChannelSettings
             $slackChannel->update(['is_hidden_in_lists' => $settings['is_hidden_in_lists']]);
         }
         if (array_key_exists('organisation_ids', $settings)) {
-            $slackChannel->organisations()->sync(array_unique($settings['organisation_ids']));
+            $before  = $slackChannel->organisations()->orderBy('name')->pluck('name')->all();
+            $changes = $slackChannel->organisations()->sync(array_unique($settings['organisation_ids']));
+            if (array_filter($changes)) {
+                $slackChannel->auditEvent     = 'update';
+                $slackChannel->isCustomEvent  = true;
+                $slackChannel->auditCustomOld = ['shows_to' => $before ? implode(', ', $before) : __('Everyone')];
+                $slackChannel->auditCustomNew = ['shows_to' => implode(', ', $slackChannel->organisations()->orderBy('name')->pluck('name')->all()) ?: __('Everyone')];
+                Event::dispatch(new AuditCustom($slackChannel));
+            }
         }
 
         return $slackChannel;
@@ -66,6 +76,7 @@ class UpdateVerbaChannelSettings
         return response()->json([
             'is_hidden_in_lists' => $channel->is_hidden_in_lists,
             'organisation_ids'   => $channel->organisations()->pluck('organisations.id')->all(),
+            'last_change'        => ['by' => $request->user()->contact_name ?? $request->user()->username, 'at' => now()->toIso8601String()],
         ]);
     }
 }

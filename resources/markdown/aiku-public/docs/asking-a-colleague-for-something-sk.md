@@ -1,8 +1,8 @@
 ---
 title: Ako niečo požiadať kolegu alebo oddelenie
 summary: Namiesto správy na Slacku vytvorte task, keď potrebujete, aby niekto z iného tímu niečo urobil - má jedného majiteľa, vlákno a koniec - a spracujte tasky, ktoré vám poslali iní.
-date: 2026-09-16
-source_date: 2026-09-16
+date: 2026-11-28
+source_date: 2026-11-28
 tags: tasks, chat, messaging, help desk
 category: help-desk
 ---
@@ -13,7 +13,7 @@ category: help-desk
 
 ## Prečo tasky a nie Slack
 
-Požiadavka napísaná na Slacku nemá majiteľa ani koniec. Odsunie sa v scrollovaní, nikto nevie, či ju niekto videl, a o týždeň sa na ňu niekto znova pýta. Task je tá istá veta, ale s majiteľom a koncom, takže obe strany sa o ňu už nemusia starať. Diskusia stále prebieha v chate: každý task otvorí konverzáciu v internom chate pomenovanú podľa neho, s rovnakým prekladom, odpoveďami, fotkami a rýchlymi odpoveďami, ako sú popísané v [Verbations a V·Ds](/docs/verba-verbations-and-v-ds-sk).
+Požiadavka napísaná na Slacku nemá majiteľa ani koniec. Odsunie sa v scrollovaní, nikto nevie, či ju niekto videl, a o týždeň sa na ňu niekto znova pýta. Task je tá istá veta, ale s majiteľom a koncom, takže obe strany sa o ňu už nemusia starať. Diskusia stále prebieha v chate: každý task otvorí konverzáciu v internom chate pomenovanú podľa neho, s rovnakým prekladom, odpoveďami, fotkami a rýchlymi odpoveďami, ako sú popísané v [Súkromné V·Desks a V·Ds](/docs/verba-verbations-and-v-ds-sk).
 
 ## Vytvorenie tasku
 

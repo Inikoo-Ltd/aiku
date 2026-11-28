@@ -14,6 +14,8 @@ use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Chat\SlackChannel;
+use App\Models\Helpers\Audit;
+use App\Models\SysAdmin\User;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -53,7 +55,7 @@ class IndexVerbaChannelSettings extends OrgAction
 
         $nameMatches = AllowedFilter::callback('global', fn ($query, $value) => $query->whereStartWith('slack_channels.name', $value));
 
-        return QueryBuilder::for(SlackChannel::class)
+        $channels = QueryBuilder::for(SlackChannel::class)
             ->kept()
             ->where('group_id', $group->id)
             ->with('organisations:id')
@@ -70,6 +72,20 @@ class IndexVerbaChannelSettings extends OrgAction
                 'is_hidden_in_lists' => $channel->is_hidden_in_lists,
                 'organisation_ids'   => $channel->organisations->pluck('id')->all(),
             ]);
+
+        $lastChanges = Audit::query()
+            ->selectRaw('distinct on (auditable_id) auditable_id, user_id, created_at')
+            ->where('auditable_type', 'SlackChannel')
+            ->whereIn('auditable_id', collect($channels->items())->pluck('id'))
+            ->orderBy('auditable_id')->orderByDesc('id')
+            ->get()->keyBy('auditable_id');
+        $names = User::whereIn('id', $lastChanges->pluck('user_id')->filter())->pluck('contact_name', 'id');
+        $channels->through(fn (array $row) => [...$row, 'last_change' => ($change = $lastChanges->get($row['id'])) ? [
+            'by' => $names[$change->user_id] ?? null,
+            'at' => $change->created_at?->toIso8601String(),
+        ] : null]);
+
+        return $channels;
     }
 
     public function tableStructure(string $prefix = 'channels'): Closure
@@ -80,6 +96,7 @@ class IndexVerbaChannelSettings extends OrgAction
                 ->column(key: 'name', label: __('V·Desk'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'organisation_ids', label: __('Shows to'), canBeHidden: false)
                 ->column(key: 'is_hidden_in_lists', label: __('Hidden'), canBeHidden: false)
+                ->column(key: 'last_change', label: __('Last change'), canBeHidden: false)
                 ->defaultSort('name');
         };
     }

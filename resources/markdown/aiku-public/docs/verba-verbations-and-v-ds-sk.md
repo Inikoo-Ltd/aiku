@@ -1,8 +1,8 @@
 ---
-title: Verbations a V·Ds, súkromné skupiny a priame správy
-summary: Súkromné skupiny a priame správy vo Verbe - ako ich začať, písanie, preklad, rýchle odpovede, odškrtnutia, prenesenie vašich konverzácií zo Slacku, bočná lišta správ a Ask CRM / Ask warehouse.
-date: 2026-11-27
-source_date: 2026-11-27
+title: Súkromné V·Desks a V·Ds, súkromné kanály a priame správy
+summary: Súkromné V·Desks a priame správy vo Verbe - ako ich začať, písanie, preklad, rýchle odpovede, odškrtnutia, prenesenie vašich konverzácií zo Slacku, bočná lišta správ a Ask CRM / Ask warehouse.
+date: 2026-11-28
+source_date: 2026-11-28
 tags: chat, messaging, verba, crm, dispatch
 category: help-desk
 series: Verba
@@ -10,7 +10,7 @@ order: 4
 ---
 
 <aside class="tldr">
-<b>V·D</b> je priama správa jednému kolegovi alebo niekoľkým. <b>Verbation</b> je súkromná skupina s názvom. Konverzáciu vidia len ľudia, ktorí v nej sú. Ak vám prišiel chat s názvom <b>CRM · </b><i>číslo dokladu</i>, ktorý ste nečakali, skočte na <a href="#who-receives">Kto dostáva Ask CRM</a>.
+<b>V·D</b> je priama správa jednému kolegovi alebo niekoľkým. <b>Súkromný V·Desk</b> je súkromný kanál s názvom, ktorý má namiesto # zámok. Konverzáciu vidia len ľudia, ktorí v nej sú. Ak vám prišiel chat s názvom <b>CRM · </b><i>číslo dokladu</i>, ktorý ste nečakali, skočte na <a href="#who-receives">Kto dostáva Ask CRM</a>.
 </aside>
 
 <h2 id="v-ds">V·Ds: priame správy</h2>
@@ -30,20 +30,22 @@ Veci, ktoré pomáhajú na sklade:
 
 Kliknite na hviezdičku pri chate, aby zostal v **Starred** navrchu zoznamu.
 
-<h2 id="verbations">Verbations: súkromné skupiny</h2>
+<h2 id="verbations">Súkromné V·Desks: súkromné kanály</h2>
 
-Stlačte **New Verbation**, zadajte **Name** (napríklad "buying-team"), pridajte **People** a stlačte **Create**. Vytvorí sa ako súkromný kanál v Slacku, vytvorený ako vy, takže ho vidia len ľudia, ktorých pozvete, v Slacku aj vo Verbe. Na vytvorenie treba mať pripojený účet v Slacku.
+Stlačte na záložke **V·Desks** **New private V·Desk**, zadajte **Name** (napríklad "buying-team"), pridajte **People** a stlačte **Create**. Vytvorí sa ako súkromný kanál v Slacku, vytvorený ako vy, takže ho vidia len ľudia, ktorých pozvete, v Slacku aj vo Verbe. Na vytvorenie treba mať pripojený účet v Slacku.
 
 Súkromné kanály zo Slacku sú vo Verbe zatiaľ len na čítanie: hlásia **Private channel, read only** a odpovedáte v Slacku.
 
-Člen môže zapnúť **Show this channel's name in Verbations, so others can ask to join**. Jeho správy zostanú len pre členov. Takto zobrazené kanály sa všetkým ostatným ukážu pod **Other private channels** s tlačidlom **Ask to join**.
+Ak chcete vidieť len svoje súkromné V·Desks, použite filter **All · Public · Private** navrchu bočného panela V·Desks. Staré odkazy končiace na /vx/groups stále fungujú.
+
+Člen môže zapnúť **Show this channel's name in V·Desks, so others can ask to join**. Jeho správy zostanú len pre členov. Takto zobrazené kanály sa všetkým ostatným ukážu pod **Other private channels** s tlačidlom **Ask to join**.
 
 <h2 id="slack">Preniesť vaše konverzácie zo Slacku</h2>
 
 Vaše priame správy, skupinové chaty a súkromné kanály zo Slacku sa do Verby samy nedostanú. Rozhodujete vy:
 
-- **Vaše priame správy a skupinové chaty:** na záložke **V·Ds** alebo **Verbations** stlačte **Read and say yes** na karte **Bring your Slack conversations**, alebo zapnite **Private conversations** vo vašich **Personal settings** pod **Slack**. Dialóg presne vysvetlí, čo Verba uchová a kto to uvidí; prečítajte si ho, zaškrtnite **I understand** a stlačte **Bring my messages**. Z priamych správ a skupinových chatov prídu len vaše vlastné slová; súkromné kanály, v ktorých ste, prídu celé. Kde kolega ešte neodpovedal áno, namiesto jeho správy uvidíte **Not brought to Verba yet**.
-- **Súkromný kanál, celý, pre všetkých v ňom:** otvorte kanál v Slacku a napíšte `/invite @aiku`. O chvíľu sa objaví vo Verbations s riadkom, kto ho priniesol.
+- **Vaše priame správy a skupinové chaty:** na záložke **V·Ds** alebo **V·Desks** stlačte **Read and say yes** na karte **Bring your Slack conversations**, alebo zapnite **Private conversations** vo vašich **Personal settings** pod **Slack**. Dialóg presne vysvetlí, čo Verba uchová a kto to uvidí; prečítajte si ho, zaškrtnite **I understand** a stlačte **Bring my messages**. Z priamych správ a skupinových chatov prídu len vaše vlastné slová; súkromné kanály, v ktorých ste, prídu celé. Kde kolega ešte neodpovedal áno, namiesto jeho správy uvidíte **Not brought to Verba yet**.
+- **Súkromný kanál, celý, pre všetkých v ňom:** otvorte kanál v Slacku a napíšte `/invite @aiku`. O chvíľu sa objaví vo V·Desks s riadkom, kto ho priniesol.
 
 Priame správy zo Slacku sú vo Verbe zatiaľ len na čítanie: odpovedáte v Slacku.
 
@@ -78,8 +80,8 @@ Keď sa tlačidlo stlačí: ak je niekto z hlavného zoznamu aktívny, pridajú 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Priama správa:</b> <b>Verba → V·Ds</b> → <b>New Verb</b> alebo <b>Add coworkers</b> → meno.</li>
-<li><b>Súkromná skupina:</b> <b>Verba → Verbations</b> → <b>New Verbation</b>.</li>
-<li><b>Preniesť konverzácie zo Slacku:</b> <b>V·Ds</b> alebo <b>Verbations</b> → <b>Read and say yes</b>; alebo váš avatar → <b>Personal settings</b> → <b>Slack</b> → <b>Private conversations</b>.</li>
+<li><b>Súkromný V·Desk:</b> <b>Verba → V·Desks</b> → <b>New private V·Desk</b>.</li>
+<li><b>Preniesť konverzácie zo Slacku:</b> <b>V·Ds</b> alebo <b>V·Desks</b> → <b>Read and say yes</b>; alebo váš avatar → <b>Personal settings</b> → <b>Slack</b> → <b>Private conversations</b>.</li>
 <li><b>Opýtať sa na doklad:</b> dodací list, objednávka alebo picking session → <b>Ask CRM</b> / <b>Ask warehouse</b>.</li>
 <li><b>Kto tieto otázky dostane:</b> obchod → <b>Settings → Verba</b>; organizácia → <b>Settings → Verba</b> pre predvolené zoznamy skladu.</li>
 <li><b>Rýchle odpovede:</b> skupina <b>Settings → Verba → Quick replies</b>.</li>
@@ -89,7 +91,7 @@ Keď sa tlačidlo stlačí: ak je niekto z hlavného zoznamu aktívny, pridajú 
 <aside class="wayfinder"><strong>Aké oprávnenia potrebujete</strong>
 <ul>
 <li><b>V·Ds:</b> akékoľvek prihlásenie do aiku.</li>
-<li><b>New Verbation:</b> váš účet v Slacku pripojený.</li>
+<li><b>New private V·Desk:</b> váš účet v Slacku pripojený.</li>
 <li><b>Ask CRM / Ask warehouse:</b> každý, kto môže otvoriť dodací list, objednávku alebo picking session.</li>
 <li><b>Upraviť zoznamy Ask:</b> každý, kto môže upraviť nastavenia obchodu alebo organizácie.</li>
 <li><b>Upraviť rýchle odpovede:</b> správca skupiny.</li>

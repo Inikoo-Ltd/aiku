@@ -1,8 +1,8 @@
 ---
 title: Zo Slacku do Verby
 summary: Prichádzate zo Slacku - ako sa každá vec zo Slacku volá vo Verbe, prepojenie účtu, prenesenie vašich konverzácií, čo je zatiaľ len na čítanie a presun upozornení. Určitý čas môžete používať obe.
-date: 2026-11-27
-source_date: 2026-11-27
+date: 2026-11-28
+source_date: 2026-11-28
 tags: chat, messaging, verba
 category: help-desk
 series: Verba
@@ -18,7 +18,7 @@ Ak poznáte Slack, Verbu už poznáte. Určitý čas môžete používať obe: v
 | V Slacku | Vo Verbe |
 | --- | --- |
 | Verejný kanál v Slacku | **V·Desk** |
-| Súkromný kanál v Slacku | **Verbation** |
+| Súkromný kanál v Slacku | **Súkromný V·Desk** |
 | Priama správa alebo skupinová priama správa v Slacku | **V·D** |
 | Správa v Slacku | **Verb** |
 
@@ -36,7 +36,7 @@ Aby sa vaše Verbs v Slacku zobrazovali ako od vás, a nie cez aplikáciu aiku, 
 
 <h2 id="bring">Prenesenie vašich konverzácií zo Slacku</h2>
 
-Vaše priame správy, skupinové chaty a súkromné kanály zo Slacku sa dostanú do Verby, len ak s tým súhlasíte: na záložke **V·Ds** alebo **Verbations** stlačte pri **Bring your Slack conversations** tlačidlo **Read and say yes**. Súkromný kanál sa dá preniesť aj celý pre všetkých, čo v ňom sú: v Slacku do neho napíšte `/invite @aiku`. Podrobnosti v návode [Verbations a V·Ds](/docs/verba-verbations-and-v-ds-sk#slack).
+Vaše priame správy, skupinové chaty a súkromné kanály zo Slacku sa dostanú do Verby, len ak s tým súhlasíte: na záložke **V·Ds** alebo **V·Desks** stlačte pri **Bring your Slack conversations** tlačidlo **Read and say yes**. Súkromný kanál sa dá preniesť aj celý pre všetkých, čo v ňom sú: v Slacku do neho napíšte `/invite @aiku`. Podrobnosti v návode [Súkromné V·Desks a V·Ds](/docs/verba-verbations-and-v-ds-sk#slack).
 
 <h2 id="notifications">Presun vašich upozornení</h2>
 

@@ -17,6 +17,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { PageHeadingTypes } from "@/types/PageHeading"
 
 library.add(faCog, faHashtag, faArchive)
@@ -28,6 +29,7 @@ type ChannelRow = {
     is_archived: boolean
     is_hidden_in_lists: boolean
     organisation_ids: number[]
+    last_change: { by: string | null; at: string | null } | null
 }
 
 defineProps<{
@@ -105,6 +107,9 @@ const save = async (row: ChannelRow, changes: Partial<Pick<ChannelRow, "is_hidde
                         :disabled="saving[item.id]"
                         :aria-label="ctrans('Hide :channel from every list', { channel: item.name ?? '' })"
                         @update:model-value="(hidden: boolean) => save(item, { is_hidden_in_lists: hidden })" />
+                </template>
+                <template #cell(last_change)="{ item }">
+                    <span v-if="item.last_change" class="whitespace-nowrap text-xs text-gray-500">{{ item.last_change.by ?? ctrans("Someone") }} · {{ useFormatTime(item.last_change.at, { formatTime: "short-datetime" }) }}</span>
                 </template>
             </Table>
         </div>

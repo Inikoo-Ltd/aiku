@@ -1,7 +1,7 @@
 ---
 title: Verba News
-summary: The first Verba tab - this week's highlights from your chats and channels, celebrations, your recent chats, and one-click buttons to start a Verb, a Verbation, a call or a meeting link.
-date: 2026-11-27
+summary: The first Verba tab - this week's highlights from your chats and channels, celebrations, your recent chats, and one-click buttons to start a Verb, a private V·Desk, a call or a meeting link.
+date: 2026-11-28
 tags: chat, messaging, verba
 category: help-desk
 help_routes: grp.chat.staff.feed
@@ -18,7 +18,7 @@ order: 2
 At the top of **News** are buttons:
 
 - **New Verb**: write to a colleague. Pick a name and the V·D opens.
-- **New Verbation**: create a private group. See [Verbations and V·Ds](/docs/verba-verbations-and-v-ds).
+- **New private V·Desk**: create a private channel. See [Private V·Desks and V·Ds](/docs/verba-verbations-and-v-ds).
 - **Call** and **Video call**: type a name and the call starts. See [Calls](/docs/verba-calls).
 - **New meeting link**: makes a link and copies it for you (the button turns to **Link copied**). Send it to anyone: colleagues go straight in, people outside the company ask to join and someone in the meeting lets them in. **Open the meeting** takes you there.
 
@@ -38,7 +38,7 @@ On the side, **Recent chats** lists the last people you talked to one to one. Ea
 
 <h2 id="slack">Bringing your Slack conversations</h2>
 
-When you open the **V·Ds** or **Verbations** tab without picking a chat, a card **Bring your Slack conversations** shows until you have said yes. That is explained in [Verbations and V·Ds](/docs/verba-verbations-and-v-ds#slack).
+When you open the **V·Ds** or **V·Desks** tab without picking a chat, a card **Bring your Slack conversations** shows until you have said yes. That is explained in [Private V·Desks and V·Ds](/docs/verba-verbations-and-v-ds#slack).
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
