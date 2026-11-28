@@ -194,7 +194,7 @@ return [
             'deployments', 'app_deployments', 'ci_runs', 'ci_metric_snapshots', 'committers', 'servers', 'server_metric*', 'disaster_recovery_rehearsals', 'debug_webhooks', 'payment_gateway_logs',
             'fetch*', 'chunks', 'uploads', 'upload_records', 'mcp_*', 'ai_usages', 'notifications', 'retina_api_requests', 'aiku_*',
             'staff_conversations', 'staff_conversation_participants', 'staff_calls', 'staff_call_participants', 'e_invoice_api_calls', 'mobile_offline_*',
-            'model_has_attachments', 'external_subscriber_*', 'web_vital_samples', 'rail_usage', 'aura_button_usage', 'restricted_country_region_logs', 'subscription_events',
+            'model_has_attachments', 'external_subscriber_*', 'web_vital_samples', 'rail_usage', 'aura_button_usage', 'verba_join_usage', 'restricted_country_region_logs', 'subscription_events',
         ],
     ],
 
