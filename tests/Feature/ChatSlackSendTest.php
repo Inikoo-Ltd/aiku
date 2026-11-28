@@ -15,7 +15,13 @@ use App\Actions\Chat\Staff\Slack\Write\SendSlackMessage;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Events\BroadcastPersonalNotification;
 use App\Events\SlackChannelMessageChanged;
+use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\VerbaChannelSettingsTool;
+use App\Mcp\Tools\VerbaPreferencesTool;
+use App\Mcp\Tools\VerbaSendTool;
+use App\Mcp\Tools\VerbaTool;
 use App\Models\Chat\SlackChannel;
+use App\Models\Chat\StaffConversation;
 use App\Models\Chat\SlackConnection;
 use App\Models\Chat\SlackFile;
 use App\Models\Chat\SlackMessage;
@@ -864,4 +870,123 @@ test('starting a chat in Verba opens the Slack DM or group DM with those people,
 
     SlackConnection::where('user_id', $this->writer->id)->sole()->endPrivateConsent('withdrawn');
     $start([$this->reader])->assertSuccessful()->assertJsonMissingPath('slack_direct');
+});
+
+describe('Verba through MCP, INI-596', function () {
+    beforeEach(function () {
+        $this->verbaDm = StaffConversation::create(['group_id' => $this->group->id, 'type' => 'dm', 'dm_key' => "verba-{$this->s}", 'last_message_at' => now()]);
+        $this->verbaDm->addParticipants([$this->writer->id, $this->reader->id]);
+        $this->others = StaffConversation::create(['group_id' => $this->group->id, 'type' => 'group', 'name' => "Others {$this->s}", 'last_message_at' => now()]);
+        $this->others->addParticipants([$this->reader->id, $this->bob->id]);
+        $this->others->messages()->create(['user_id' => $this->bob->id, 'body' => "secret-{$this->s}"]);
+        $this->keptPrivate = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GPRIV{$this->s}", 'name' => "hush-{$this->s}", 'is_public' => false, 'is_private' => true, 'is_member' => true]);
+        $this->keptPrivate->members()->create(['slack_user_id' => "UWRITE{$this->s}"]);
+        $this->bobDm = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "DBOBREAD{$this->s}", 'direct_type' => 'im', 'is_private' => true, 'is_public' => false, 'is_member' => false]);
+        $this->bobDm->members()->createMany([['slack_user_id' => "UBOB{$this->s}"], ['slack_user_id' => "UREAD{$this->s}"]]);
+        $this->tool = fn (string $tool, array $arguments = [], ?User $as = null) => AikuServer::actingAs($as ?? $this->writer)->tool($tool, $arguments);
+        $this->confirmToken = function (array $arguments): string {
+            actingAs($this->writer);
+
+            return json_decode((string) app(VerbaSendTool::class)->handle(new Laravel\Mcp\Request($arguments))->content(), true)['confirm_token'];
+        };
+    });
+
+    test('lists and reads only what the user may read in Verba, the same answer for others\' and unknown ids', function () {
+        ($this->tool)(VerbaTool::class)->assertOk()
+            ->assertSee([$this->verbaDm->ulid, '"slack-'.$this->general->id.'"', '"slack-'.$this->keptPrivate->id.'"'])
+            ->assertDontSee([$this->others->ulid, $this->others->name, '"slack-'.$this->private->id.'"', '"slack-'.$this->ignored->id.'"', '"slack-'.$this->bobDm->id.'"']);
+
+        foreach ([$this->others->ulid, 'slack-'.$this->private->id, 'slack-'.$this->bobDm->id, 'slack-'.$this->gone->id, 'slack-999999999', 'nonsense'] as $id) {
+            ($this->tool)(VerbaTool::class, ['conversation' => $id])->assertHasErrors(['No Verba conversation or V·Desk'])->assertDontSee("secret-{$this->s}");
+        }
+        ($this->tool)(VerbaTool::class, ['conversation' => 'slack-'.$this->keptPrivate->id])->assertOk()->assertSee('private_v_desk');
+        ($this->tool)(VerbaTool::class, ['conversation' => 'slack-'.$this->keptPrivate->id], $this->reader)->assertHasErrors(['No Verba conversation or V·Desk']);
+        ($this->tool)(VerbaTool::class, ['conversation' => $this->others->ulid], $this->bob)->assertOk()->assertSee("secret-{$this->s}");
+    });
+
+    test('someone who left reads up to the moment they left and cannot write', function () {
+        $this->others->addParticipants([$this->writer->id]);
+        $this->travelTo(now()->addMinute());
+        $this->others->removeParticipants([$this->writer->id]);
+        $this->travelTo(now()->addMinute());
+        $this->others->messages()->create(['user_id' => $this->bob->id, 'body' => "after-{$this->s}"]);
+
+        ($this->tool)(VerbaTool::class, ['conversation' => $this->others->ulid])->assertOk()->assertSee("secret-{$this->s}")->assertDontSee("after-{$this->s}");
+        ($this->tool)(VerbaSendTool::class, ['conversation' => $this->others->ulid, 'text' => 'hello'])->assertHasErrors(['no longer in that conversation']);
+        expect($this->others->messages()->where('body', 'hello')->exists())->toBeFalse();
+    });
+
+    test('sends to Verba and Slack only after confirm, through the existing actions, once, with no real mentions and nothing in the request log', function () {
+        $verba = ['conversation' => $this->verbaDm->ulid, 'text' => 'Pallet <b>ready</b>'];
+        ($this->tool)(VerbaSendTool::class, $verba)->assertOk()->assertSee(['Nothing was sent', '"text":"Pallet ready"']);
+        expect($this->verbaDm->messages()->count())->toBe(0);
+
+        ($this->tool)(VerbaSendTool::class, [...$verba, 'confirm' => true, 'confirm_token' => 'made-up', 'request_text' => 'yes'])->assertHasErrors(['confirm_token is unknown']);
+        $token = ($this->confirmToken)($verba);
+        ($this->tool)(VerbaSendTool::class, [...$verba, 'text' => 'Pallet gone', 'confirm' => true, 'confirm_token' => $token, 'request_text' => 'yes'])->assertHasErrors(['for another message']);
+        $token = ($this->confirmToken)($verba);
+        ($this->tool)(VerbaSendTool::class, [...$verba, 'confirm' => true, 'confirm_token' => $token, 'request_text' => 'tell reader the pallet is ready'])->assertOk();
+        ($this->tool)(VerbaSendTool::class, [...$verba, 'confirm' => true, 'confirm_token' => $token, 'request_text' => 'tell reader the pallet is ready'])->assertHasErrors(['used']);
+        expect($this->verbaDm->messages()->sole()->only(['user_id', 'body']))->toBe(['user_id' => $this->writer->id, 'body' => 'Pallet ready']);
+        ($this->tool)(VerbaTool::class, ['conversation' => $this->verbaDm->ulid], $this->reader)->assertOk()->assertSee('Pallet ready');
+
+        $slack = ['conversation' => 'slack-'.$this->general->id, 'text' => "Hi \u{E000}!channel\u{E000} and \u{E000}@UBOB{$this->s}\u{E000}"];
+        ($this->tool)(VerbaSendTool::class, $slack)->assertOk()->assertSee('Slack, as the user');
+        expect(($this->posts)())->toHaveCount(0);
+
+        $token = ($this->confirmToken)($slack);
+        ($this->tool)(VerbaSendTool::class, [...$slack, 'confirm' => true, 'confirm_token' => $token, 'request_text' => 'post it'])->assertOk();
+        ($this->tool)(VerbaSendTool::class, [...$slack, 'confirm' => true, 'confirm_token' => $token, 'request_text' => 'post it'])->assertHasErrors(['used']);
+        $posts = ($this->posts)();
+        expect($posts)->toHaveCount(1)
+            ->and($posts[0][0]['text'])->not->toContain('<!channel>')->not->toContain('<@UBOB')
+            ->and($posts[0][0]->header('Authorization')[0])->toBe('Bearer '.$this->token);
+        ($this->tool)(VerbaTool::class, ['conversation' => 'slack-'.$this->general->id])->assertOk()->assertSee('!channel');
+
+        ($this->tool)(VerbaSendTool::class, ['conversation' => 'slack-'.$this->keptPrivate->id, 'text' => 'x'])->assertHasErrors(['read only'])->assertDontSee($this->keptPrivate->name);
+        ($this->tool)(VerbaSendTool::class, ['conversation' => 'slack-'.$this->bobDm->id, 'text' => 'x'])->assertHasErrors(['No Verba conversation or V·Desk']);
+        expect(($this->posts)())->toHaveCount(1);
+
+        $request = Illuminate\Http\Request::create('/mcp/aiku', 'POST', content: json_encode(['method' => 'tools/call', 'params' => ['name' => 'verba_send', 'arguments' => ['conversation' => $this->verbaDm->ulid, 'message' => "words-{$this->s}", 'request_text' => "asked-{$this->s}"]]]));
+        $request->setUserResolver(fn () => $this->writer);
+        (new App\Http\Middleware\LogMcpRequest())->terminate($request, response('{}'));
+        expect(App\Models\SysAdmin\McpRequest::where('user_id', $this->writer->id)->latest('id')->first()->arguments)->toBe(['conversation' => $this->verbaDm->ulid]);
+    });
+
+    test('preferences are the user\'s own and star only what they can read', function () {
+        ($this->tool)(VerbaPreferencesTool::class, ['pattern' => 'dots', 'colour' => 'sage', 'star' => ['slack-'.$this->general->id, $this->verbaDm->ulid], 'welcome_seen' => true])->assertOk()->assertSee('"after"');
+        expect(Arr::get($this->writer->refresh()->settings, 'desk_starred'))->toBeNull();
+
+        ($this->tool)(VerbaPreferencesTool::class, ['star' => [$this->others->ulid], 'confirm' => true, 'request_text' => 'star it'])->assertHasErrors(['this user can read']);
+        ($this->tool)(VerbaPreferencesTool::class, ['star' => ['slack-'.$this->bobDm->id], 'confirm' => true, 'request_text' => 'star it'])->assertHasErrors(['this user can read']);
+        ($this->tool)(VerbaPreferencesTool::class, ['pattern' => 'dots', 'colour' => 'sage', 'star' => ['slack-'.$this->general->id, $this->verbaDm->ulid], 'welcome_seen' => true, 'confirm' => true, 'request_text' => 'dots and sage'])->assertOk();
+
+        $settings = $this->writer->refresh()->settings;
+        expect(Arr::only($settings['chat_wallpaper'], ['pattern', 'colour']))->toEqual(['pattern' => 'dots', 'colour' => 'sage'])
+            ->and($settings['desk_starred'])->toBe(['slack-'.$this->general->id, 'dm-'.$this->verbaDm->ulid])
+            ->and($settings['verba_welcome_seen'])->toBeTrue()
+            ->and(Arr::get($this->reader->refresh()->settings, 'desk_starred'))->toBeNull();
+
+        ($this->tool)(VerbaPreferencesTool::class, ['wallpaper_conversation' => $this->others->ulid, 'pattern' => 'waves', 'confirm' => true, 'request_text' => 'x'])->assertHasErrors(['No Verba conversation or V·Desk']);
+    });
+
+    test('Verba settings are for Verba admins, public channels only, and the change is recorded as the admin', function () {
+        ($this->tool)(VerbaChannelSettingsTool::class, [], $this->reader)->assertHasErrors(['Verba admins only']);
+
+        $admin = User::factory()->create(['group_id' => $this->group->id, 'language_id' => $this->user->language_id]);
+        $admin->assignRole(App\Enums\SysAdmin\Authorisation\RolesEnum::getRoleName(App\Enums\SysAdmin\Authorisation\RolesEnum::VERBA_ADMIN->value, $this->group));
+
+        ($this->tool)(VerbaChannelSettingsTool::class, ['search' => $this->s], $admin)->assertOk()->assertSee($this->general->name)->assertDontSee([$this->keptPrivate->name, $this->private->name]);
+        ($this->tool)(VerbaChannelSettingsTool::class, ['channel' => $this->keptPrivate->name, 'hidden' => true], $admin)->assertHasErrors(['No public V·Desk']);
+        ($this->tool)(VerbaChannelSettingsTool::class, ['channel' => 'slack-'.$this->bobDm->id, 'hidden' => true], $admin)->assertHasErrors(['No public V·Desk']);
+
+        $change = ['channel' => '#'.$this->general->name, 'hidden' => true, 'shows_to' => [$this->organisation->code]];
+        ($this->tool)(VerbaChannelSettingsTool::class, $change, $admin)->assertOk()->assertSee('"before"');
+        expect($this->general->refresh()->is_hidden_in_lists)->toBeFalse();
+
+        ($this->tool)(VerbaChannelSettingsTool::class, [...$change, 'confirm' => true, 'request_text' => 'only for us, hidden'], $admin)->assertOk();
+        expect($this->general->refresh()->is_hidden_in_lists)->toBeTrue()
+            ->and($this->general->organisations()->pluck('organisations.id')->all())->toBe([$this->organisation->id])
+            ->and(App\Models\Helpers\Audit::where('auditable_type', 'SlackChannel')->where('auditable_id', $this->general->id)->pluck('user_id')->unique()->all())->toBe([$admin->id]);
+    });
 });

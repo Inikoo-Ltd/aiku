@@ -18,6 +18,15 @@ use Throwable;
 
 class LogMcpRequest
 {
+    /**
+     * Verba tools carry what staff write to each other (INI-427), and mcp_requests is read by the SysAdmin and HR
+     * screens and the SQL tiers: for any tool name mentioning verba (misspelt ones included) only these keys are kept.
+     */
+    public const array VERBA_LOGGED_ARGUMENTS = [
+        'conversation', 'before', 'thread_ts', 'limit', 'reply_to', 'confirm', 'pattern', 'colour', 'mode', 'style',
+        'wallpaper_conversation', 'star', 'unstar', 'welcome_seen', 'shows_to', 'hidden',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         $request->attributes->set('mcp_request_start', microtime(true));
@@ -44,8 +53,8 @@ class LogMcpRequest
             McpRequest::create([
                 'group_id'    => $user->group_id,
                 'user_id'     => $user->id,
-                'tool'        => Arr::get($payload, 'params.name', 'unknown'),
-                'arguments'   => Arr::get($payload, 'params.arguments', []),
+                'tool'        => $tool = (string) Arr::get($payload, 'params.name', 'unknown'),
+                'arguments'   => self::loggedArguments($tool, (array) Arr::get($payload, 'params.arguments', [])),
                 'is_error'    => $error !== null,
                 'error'       => $error,
                 'duration_ms' => (int) ((microtime(true) - $request->attributes->get('mcp_request_start', microtime(true))) * 1000),
@@ -53,6 +62,15 @@ class LogMcpRequest
         } catch (Throwable $e) {
             Log::warning('Failed to log MCP request', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    public static function loggedArguments(string $tool, array $arguments): array
+    {
+        return str_contains(strtolower($tool), 'verba') ? Arr::only($arguments, self::VERBA_LOGGED_ARGUMENTS) : $arguments;
     }
 
     /**

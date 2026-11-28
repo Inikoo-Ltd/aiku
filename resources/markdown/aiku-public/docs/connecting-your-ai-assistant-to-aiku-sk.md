@@ -86,6 +86,14 @@ Keď je <b>Can connect AI assistant</b> zapnuté, tvoj asistent odpovedá na ot�
 
 > *"Pošli vedúcemu skladu správu, že paleta pre španielskeho partnera je pripravená."*
 
+**Verba, chat zamestnancov**
+
+Tvoj asistent číta tvoje vlastné konverzácie vo Verbe, V·Desky, ktoré môžeš čítať, a tvoje Slack DM, a môže tam v tvojom mene poslať správu. Najprv ti ukáže, kam správa pôjde a jej presné znenie, a pošle ju až po tvojom áno. Nikdy nečíta konverzácie iných ľudí a čítaním nič neoznačí ako prečítané. Vie aj zmeniť tvoju tapetu vo Verbe a tvoje V·Desky s hviezdičkou.
+
+> *"Čo som dnes ráno zmeškal vo Verbe? Zhrň moje neprečítané konverzácie."*
+
+> *"Napíš do V·Desku balenia, že kuriér príde dnes o 15:00."*
+
 <b>Super intelligence 🧠</b> je samostatné oprávnenie pre pár ľudí, ktorým sa dôveruje so všetkými údajmi firmy. Ich asistent sa môže pýtať čokoľvek na všetko v aiku, v každom obchode a organizácii, vrátane údajov, ktoré v aiku sami nevidia, a na systémové záznamy (chyby, pomalé stránky, úlohy na pozadí). Stále iba číta.
 
 ## Čo vie meniť
@@ -157,6 +165,10 @@ Skôr než niečo zmení, asistent ti ukáže, čo sa zmení, a čaká na tvoje 
 **Can change who gets Ask CRM and Ask warehouse questions.** Pridaj a odober zamestnancov v týchto zoznamoch v jednom obchode alebo vo všetkých obchodoch organizácie.
 
 > *"Pridaj nového kolegu zo zákazníckeho servisu do Ask CRM vo všetkých obchodoch organizácie."*
+
+**Admini Verby** vyberajú, ktorým organizáciám sa každý verejný V·Desk zobrazí v zozname, alebo ho skryjú zo všetkých zoznamov. Nikto nestratí prístup a Slack sa nemení; každá zmena sa zapíše do histórie kanála s tvojím menom.
+
+> *"Zobraz španielske V·Desky iba španielskej organizácii."*
 
 <aside class="warning">
 Oprávnenia, ktoré menia, koľko platia zákazníci, míňajú peniaze alebo menia hodnotu zásoby, sú pre ľudí, ktorí o týchto veciach rozhodujú. Skôr než o také požiadaš administrátora, opýtaj sa svojho nadriadeného.

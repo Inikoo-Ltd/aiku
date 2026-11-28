@@ -85,6 +85,14 @@ With <b>Can connect AI assistant</b> on, your assistant answers questions about 
 
 > *"Send the warehouse manager a message that the pallet for the Spanish partner is ready."*
 
+**Verba, the staff chat**
+
+Your assistant reads your own Verba conversations, the V·Desks you can read and your Slack DMs, and can send a message there in your name. It shows you where the message goes and the exact words first, and sends only after your yes. It never reads anyone else's conversations, and reading does not mark anything as read. It can also change your Verba wallpaper and starred V·Desks.
+
+> *"What did I miss in Verba this morning? Summarise my unread conversations."*
+
+> *"Tell the packing V·Desk that the courier comes at 3 pm today."*
+
 <b>Super intelligence 🧠</b> is a separate permission for a few people trusted with all company data. Their assistant can ask any question of everything in aiku, in every shop and organisation, including data they cannot see in aiku, and the system records (errors, slow pages, background jobs). It still only reads.
 
 ## What it can change
@@ -156,6 +164,10 @@ Before changing anything your assistant shows you what will change and waits for
 **Can change who gets Ask CRM and Ask warehouse questions.** Add and remove staff on those lists in one shop or every shop of an organisation.
 
 > *"Add the new customer service colleague to Ask CRM in every shop of the organisation."*
+
+**Verba admins** choose which organisations get each public V·Desk in their list, or hide it from every list. Nobody loses access and Slack is not changed; each change shows in the channel's history with your name.
+
+> *"Show the Spanish V·Desks only to the Spanish organisation."*
 
 <aside class="warning">
 Permissions that change what customers pay, spend money or change the value of stock are for the people who make those decisions. Ask your manager before asking an administrator for one.

@@ -86,6 +86,14 @@ Con <b>Can connect AI assistant</b> activado, tu asistente responde preguntas so
 
 > *"Manda un mensaje al responsable del almacén diciendo que el palé para el socio español está listo."*
 
+**Verba, el chat del personal**
+
+Tu asistente lee tus propias conversaciones de Verba, los V·Desks que puedes leer y tus DMs de Slack, y puede enviar un mensaje ahí en tu nombre. Primero te muestra adónde va el mensaje y el texto exacto, y solo lo envía cuando dices que sí. Nunca lee las conversaciones de otras personas, y leer no marca nada como leído. También puede cambiar tu fondo de Verba y tus V·Desks destacados.
+
+> *"¿Qué me he perdido esta mañana en Verba? Resume mis conversaciones sin leer."*
+
+> *"Di en el V·Desk de empaquetado que el mensajero viene hoy a las 15:00."*
+
 <b>Super intelligence 🧠</b> es un permiso aparte para unas pocas personas de confianza con acceso a todos los datos de la empresa. Su asistente puede hacer cualquier pregunta sobre todo lo que hay en aiku, en todas las tiendas y organizaciones, incluidos datos que ellos no pueden ver en aiku, y los registros del sistema (errores, páginas lentas, tareas en segundo plano). Sigue siendo solo de lectura.
 
 ## Qué puede cambiar
@@ -157,6 +165,10 @@ Antes de cambiar nada, tu asistente te muestra qué va a cambiar y espera tu sí
 **Can change who gets Ask CRM and Ask warehouse questions.** Añade y quita personal en esas listas, en una tienda o en todas las tiendas de una organización.
 
 > *"Añade al nuevo compañero de atención al cliente a Ask CRM en todas las tiendas de la organización."*
+
+**Los admins de Verba** eligen a qué organizaciones les aparece cada V·Desk público en su lista, o lo ocultan de todas las listas. Nadie pierde el acceso y Slack no cambia; cada cambio queda en el historial del canal con tu nombre.
+
+> *"Muestra los V·Desks españoles solo a la organización de España."*
 
 <aside class="warning">
 Los permisos que cambian lo que pagan los clientes, gastan dinero o modifican el valor del stock son para las personas que toman esas decisiones. Habla con tu responsable antes de pedirle uno a un administrador.

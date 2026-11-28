@@ -77,6 +77,8 @@ class GetAiAssistantAccess
                 __('What are customers saying in their reviews this month? Summarise the complaints.'),
                 __('Raise a ticket: the label printer in packing prints blank labels since this morning.'),
                 __('Ask the warehouse to count location A-12-03 and tell me when it is done.'),
+                __('What did I miss in Verba this morning? Summarise my unread conversations.'),
+                __('Tell the packing V·Desk that the courier comes at 3 pm today.'),
             ],
             'can_use_mcp_sql'              => [
                 __('Across every organisation, which trade units sold more this quarter than the same quarter last year?'),
@@ -147,6 +149,9 @@ class GetAiAssistantAccess
                     __('Raise help tickets and comment on the tickets they raised.'),
                     __('Ask a colleague or a department to do something (a staff task) and follow it up.'),
                     __('Send a Discord message to a colleague in their name.'),
+                    __('Read their own Verba conversations, the V·Desks they may read and their Slack DMs, and send a message there in their name once they have seen it and said yes. Never anyone else\'s conversations.'),
+                    __('Change their own Verba wallpaper and starred V·Desks.'),
+                    __('Verba admins: choose which organisations get each public V·Desk in their list, or hide it.'),
                 ],
                 'note'  => __('It only reads, unless one of the switches below is on.'),
             ],
