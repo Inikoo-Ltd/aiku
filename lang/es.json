@@ -27253,5 +27253,8 @@
     "not enough stock there": "no hay stock suficiente allí",
     "only :warehouse can ship the whole order, send it there or home": "solo :warehouse puede expedir el pedido completo, envíelo allí o al almacén propio",
     "This is not a valid Spanish NIF. It has 9 characters with its control letter or digit, e.g. 12345678Z or B12345674.": "Este NIF no es válido. Tiene 9 caracteres con su letra o dígito de control, p. ej. 12345678Z o B12345674.",
-    "This is not a valid Spanish NIF-IVA. It is ES and your NIF, e.g. ES12345678Z or ESB12345674.": "Este NIF-IVA no es válido. Es ES seguido de tu NIF, p. ej. ES12345678Z o ESB12345674."
+    "This is not a valid Spanish NIF-IVA. It is ES and your NIF, e.g. ES12345678Z or ESB12345674.": "Este NIF-IVA no es válido. Es ES seguido de tu NIF, p. ej. ES12345678Z o ESB12345674.",
+    "Can not be sent to the warehouse yet": "Todavía no se puede enviar al almacén",
+    "Send to warehouse anyway": "Enviar al almacén de todos modos",
+    "Send it to the warehouse without waiting, the warehouse note will say who did it": "Enviarlo al almacén sin esperar, la nota del almacén dirá quién lo hizo"
 }

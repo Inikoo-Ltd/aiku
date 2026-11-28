@@ -26367,5 +26367,8 @@
     "its shipper is locked": "transportatorul său este blocat",
     "no single warehouse can ship the whole order, some lines are only in another warehouse": "niciun depozit nu poate expedia singur întreaga comandă, unele linii sunt doar într-un alt depozit",
     "not enough stock there": "stoc insuficient acolo",
-    "only :warehouse can ship the whole order, send it there or home": "doar :warehouse poate expedia întreaga comandă, trimiteți-o acolo sau la depozitul propriu"
+    "only :warehouse can ship the whole order, send it there or home": "doar :warehouse poate expedia întreaga comandă, trimiteți-o acolo sau la depozitul propriu",
+    "Can not be sent to the warehouse yet": "Nu poate fi trimisă încă la depozit",
+    "Send to warehouse anyway": "Trimiteți la depozit oricum",
+    "Send it to the warehouse without waiting, the warehouse note will say who did it": "Trimiteți-o la depozit fără să așteptați, nota pentru depozit va spune cine a făcut-o"
 }

@@ -27343,5 +27343,8 @@
     "its shipper is locked": "jeho prepravca je uzamknutý",
     "no single warehouse can ship the whole order, some lines are only in another warehouse": "žiadny jednotlivý sklad nevie odoslať celú objednávku, niektoré riadky sú iba v inom sklade",
     "not enough stock there": "tam nie je dosť zásob",
-    "only :warehouse can ship the whole order, send it there or home": "celú objednávku vie odoslať iba sklad :warehouse, pošlite ju tam alebo do domovského skladu"
+    "only :warehouse can ship the whole order, send it there or home": "celú objednávku vie odoslať iba sklad :warehouse, pošlite ju tam alebo do domovského skladu",
+    "Can not be sent to the warehouse yet": "Zatiaľ sa nedá poslať do skladu",
+    "Send to warehouse anyway": "Aj tak poslať do skladu",
+    "Send it to the warehouse without waiting, the warehouse note will say who did it": "Poslať do skladu bez čakania, v poznámke pre sklad bude, kto to urobil"
 }

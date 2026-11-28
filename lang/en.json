@@ -26950,5 +26950,8 @@
     "its shipper is locked": "its shipper is locked",
     "no single warehouse can ship the whole order, some lines are only in another warehouse": "no single warehouse can ship the whole order, some lines are only in another warehouse",
     "not enough stock there": "not enough stock there",
-    "only :warehouse can ship the whole order, send it there or home": "only :warehouse can ship the whole order, send it there or home"
+    "only :warehouse can ship the whole order, send it there or home": "only :warehouse can ship the whole order, send it there or home",
+    "Can not be sent to the warehouse yet": "Can not be sent to the warehouse yet",
+    "Send to warehouse anyway": "Send to warehouse anyway",
+    "Send it to the warehouse without waiting, the warehouse note will say who did it": "Send it to the warehouse without waiting, the warehouse note will say who did it"
 }

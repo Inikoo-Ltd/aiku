@@ -98,7 +98,7 @@ const orderHref = (order: { organisation_slug: string, shop_slug: string, slug: 
             {{ ctrans("Nothing needs attention: no order has sat in a stage for more than :days working days and no line is waiting.", { days: attention.stuck_after_working_days }) }}
         </div>
 
-        <div v-else class="grid gap-3 lg:grid-cols-4">
+        <div v-else class="grid gap-3" :class="cards.length > 3 ? 'lg:grid-cols-3 xl:grid-cols-6' : 'lg:grid-cols-4'">
             <div v-for="card in cards" :key="card.key" class="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
                 <div class="flex items-baseline justify-between gap-2">
                     <div class="text-xs font-medium uppercase tracking-wide text-gray-500" v-tooltip="card.hint">
@@ -128,7 +128,7 @@ const orderHref = (order: { organisation_slug: string, shop_slug: string, slug: 
                 </Link>
             </div>
 
-            <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+            <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900" :class="{ 'lg:col-span-2': cards.length > 3 }">
                 <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ ctrans("Waiting longest") }}</div>
                 <div v-if="!attention.oldest.length" class="mt-2 text-xs text-gray-400">{{ ctrans("No stuck orders") }}</div>
                 <ul v-else class="mt-2 space-y-1 text-xs">

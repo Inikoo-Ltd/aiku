@@ -2546,6 +2546,13 @@ test('an order held for another warehouse waits submitted with its reason, and s
             ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toContain($dispatcher->name)
             ->and(SendOrderToWarehouse::make()->blockedReason($order))->toContain($dispatcher->name);
 
+        app()->setLocale('sk');
+        try {
+            expect(SendOrderToWarehouse::make()->blockedReason($order))->toBe("celú objednávku vie odoslať iba sklad {$dispatcher->name}, pošlite ju tam alebo do domovského skladu");
+        } finally {
+            app()->setLocale('en');
+        }
+
         actingAsUserWithOnlyPermissions($staff, ["orders.{$this->shop->id}.edit"]);
         $this->patch(route('grp.models.order.state.in-other-warehouse', [$order->id, $dispatcher->id]))->assertSessionHasNoErrors();
         $order = $order->fresh();
@@ -2854,6 +2861,7 @@ test('the orders backlog counts an order held for another warehouse, paid or not
     $backlog = fn (string $tab, string $query = '') => $this->get(route('grp.org.shops.show.ordering.backlog', [$this->organisation->slug, $this->shop->slug, 'tab' => $tab]).$query)->assertOk()->viewData('page')['props'];
 
     try {
+        \App\Models\Ordering\Order::where('shop_id', $this->shop->id)->whereNotNull('data->'.SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD)->get()->each(fn ($held) => SendOrderToWarehouse::forgetOtherWarehouseHold($held));
         $before = $heldInBacklog();
         $order  = $submit([[$products['at_zero'], 3]]);
         SendOrderToWarehouse::make()->action($order, []);

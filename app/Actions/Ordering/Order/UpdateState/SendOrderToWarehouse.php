@@ -341,7 +341,7 @@ class SendOrderToWarehouse extends OrgAction
             ->pluck('code');
     }
 
-    /** Read live for the order page: the holds only the bottles being filled or a fixed product composition can clear */
+    /** Read live for the order page, in the reader's language: the holds only the bottles being filled, a fixed product composition or another warehouse can clear */
     public function blockedReason(Order $order): ?string
     {
         if ($order->state != OrderStateEnum::SUBMITTED || $this->sentDespiteHold($order)) {
@@ -358,7 +358,11 @@ class SendOrderToWarehouse extends OrgAction
             return __('waiting for filling: :products', ['products' => $lines->map(fn ($line) => $line->transaction->model->code)->unique()->implode(', ')]);
         }
 
-        return Arr::get($order->data, self::OTHER_WAREHOUSE_HOLD);
+        if (!Arr::has($order->data ?? [], self::OTHER_WAREHOUSE_HOLD)) {
+            return null;
+        }
+
+        return Arr::get(RouteOrderToOtherWarehouse::run($order), 'hold') ?? Arr::get($order->data, self::OTHER_WAREHOUSE_HOLD);
     }
 
     /** Why the order is held, read from its warehouse note: "waiting for filling: FOKG-160-10ml" */

@@ -26151,5 +26151,8 @@
     "its shipper is locked": "其承运商已被锁定",
     "no single warehouse can ship the whole order, some lines are only in another warehouse": "没有单个仓库能够整单发货，部分明细行只在其他仓库有货",
     "not enough stock there": "该仓库库存不足",
-    "only :warehouse can ship the whole order, send it there or home": "只有 :warehouse 能够整单发货，请发往该仓库或发回本仓库"
+    "only :warehouse can ship the whole order, send it there or home": "只有 :warehouse 能够整单发货，请发往该仓库或发回本仓库",
+    "Can not be sent to the warehouse yet": "暂时无法发往仓库",
+    "Send to warehouse anyway": "仍然发往仓库",
+    "Send it to the warehouse without waiting, the warehouse note will say who did it": "不等待直接发往仓库，仓库备注会记录操作人"
 }

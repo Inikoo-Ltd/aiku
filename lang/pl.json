@@ -26425,5 +26425,8 @@
     "its shipper is locked": "jego przewoźnik jest zablokowany",
     "no single warehouse can ship the whole order, some lines are only in another warehouse": "żaden pojedynczy magazyn nie może wysłać całego zamówienia, niektóre pozycje są tylko w innym magazynie",
     "not enough stock there": "tam jest za mało zapasu",
-    "only :warehouse can ship the whole order, send it there or home": "tylko magazyn :warehouse może wysłać całe zamówienie, wyślij je tam lub z własnego magazynu"
+    "only :warehouse can ship the whole order, send it there or home": "tylko magazyn :warehouse może wysłać całe zamówienie, wyślij je tam lub z własnego magazynu",
+    "Can not be sent to the warehouse yet": "Jeszcze nie można wysłać do magazynu",
+    "Send to warehouse anyway": "Wyślij do magazynu mimo to",
+    "Send it to the warehouse without waiting, the warehouse note will say who did it": "Wyślij do magazynu bez czekania, w notatce dla magazynu będzie, kto to zrobił"
 }
