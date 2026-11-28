@@ -50,7 +50,7 @@ class ShowRetinaProfile extends RetinaAction
                 'type'  => 'avatar',
                 'label' => __('avatar'),
                 'value' => !blank($webUser->image_id)
-                    ? $customer->imageSources(320, 320)
+                    ? $webUser->imageSources(320, 320)
                     : [
                         'original' => '/retina-default-user.svg'
                     ],

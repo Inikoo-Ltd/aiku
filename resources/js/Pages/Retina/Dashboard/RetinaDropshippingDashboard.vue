@@ -20,6 +20,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { textReplaceVariables } from "@/Composables/Workshop"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import WhatsAppDashboardOptIn, { type WhatsappOptInData } from "@/Components/Retina/Dashboard/WhatsAppDashboardOptIn.vue"
+import RetinaAvatarUpload from "@/Components/Retina/Dashboard/RetinaAvatarUpload.vue"
 
 library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare)
 
@@ -118,14 +119,9 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
                             <!-- Left Column: Customer Information -->
                             <div class="space-y-3 text-sm">
                                 <!-- Information: contact name -->
-                                <div v-if="data.customer.contact_name" class="flex items-center">
-                                    <FontAwesomeIcon
-                                        fixed-width
-                                        icon="fas fa-user"
-                                        class="text-gray-600 mr-2 w-4 h-4"
-                                        v-tooltip="ctrans('Contact Name')"
-                                    />
-                                    <span class="">{{ data.customer.contact_name }}</span>
+                                <div class="flex items-center gap-2">
+                                    <RetinaAvatarUpload />
+                                    <span v-if="data.customer.contact_name">{{ data.customer.contact_name }}</span>
                                 </div>
 
                                 <!-- Information: company name -->

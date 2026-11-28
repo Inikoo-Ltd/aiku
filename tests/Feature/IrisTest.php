@@ -2325,3 +2325,21 @@ test('staff correct the website languages of a product, a category and a website
     enableShopLanguages($shop, [$shop->language->code]);
     expect(\App\Actions\Catalogue\Product\UI\EditProduct::make()->websiteTranslationSection($product, $shop->fresh()))->toBeNull();
 });
+
+test('the logged in customer shows by its customer contact name and a profile photo uploaded from the dashboard is shown back', function () {
+    $customer = createCustomer($this->shop);
+    $webUser  = createWebUser($customer);
+    $webUser->updateQuietly(['is_root' => true, 'contact_name' => null]);
+    $customer->updateQuietly(['contact_name' => 'Tomas Belan']);
+
+    expect(\App\Http\Resources\UI\LoggedWebUserResource::make($webUser->fresh())->getArray())
+        ->contact_name->toBe('Tomas Belan')
+        ->avatar_thumbnail->toBeNull();
+
+    \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), [
+        'image' => \Illuminate\Http\UploadedFile::fake()->image('me.jpg', 200, 200),
+    ]);
+
+    expect($webUser->fresh()->image_id)->not->toBeNull()
+        ->and(\App\Http\Resources\UI\LoggedWebUserResource::make($webUser->fresh())->getArray()['avatar_thumbnail'])->not->toBeNull();
+});

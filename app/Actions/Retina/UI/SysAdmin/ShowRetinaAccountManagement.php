@@ -82,6 +82,18 @@ class ShowRetinaAccountManagement extends RetinaAction
                                 'label'  => __('Contact'),
                                 'icon'   => 'fa-light fa-address-book',
                                 'fields' => [
+                                    'image'            => [
+                                        'type'        => 'avatar',
+                                        'label'       => __('Photo'),
+                                        'options'     => ['size' => 'small'],
+                                        'value'       => !blank($request->user()->image_id)
+                                            ? $request->user()->imageSources(320, 320)
+                                            : ['original' => '/retina-default-user.svg'],
+                                        'updateRoute' => [
+                                            'name'       => 'retina.models.profile.update',
+                                            'parameters' => []
+                                        ],
+                                    ],
                                     'contact_name'     => [
                                         'type'  => 'input',
                                         'label' => __('Contact Name'),

@@ -11,6 +11,7 @@ import { Link, Deferred } from "@inertiajs/vue3";
 import B2BDashboardInsights from "@/Components/Retina/Dashboard/B2BDashboardInsights.vue"
 import WhatsAppDashboardOptIn, { type WhatsappOptInData } from "@/Components/Retina/Dashboard/WhatsAppDashboardOptIn.vue"
 import RangeAdvisorDashboardCard from "@/Components/Retina/Dashboard/RangeAdvisorDashboardCard.vue"
+import RetinaAvatarUpload from "@/Components/Retina/Dashboard/RetinaAvatarUpload.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
@@ -69,9 +70,9 @@ const hasRangeAdvisorCard = computed(() => !!layout.iris?.shopping_assistant)
                     </Link>
                 </div>
                 <ul class="mt-2 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm">
-                <li v-if="data.customer.contact_name" class="flex min-w-0 items-center gap-2">
-                    <FontAwesomeIcon icon="fas fa-user" class="size-4 shrink-0 text-gray-500" v-tooltip="ctrans('Contact Name')" fixed-width />
-                    <span class="min-w-0 break-words text-gray-900">{{ data.customer.contact_name }}</span>
+                <li class="flex min-w-0 items-center gap-2">
+                    <RetinaAvatarUpload />
+                    <span v-if="data.customer.contact_name" class="min-w-0 break-words text-gray-900">{{ data.customer.contact_name }}</span>
                 </li>
                 <li v-if="data.customer.company_name" class="flex min-w-0 items-center gap-2">
                     <FontAwesomeIcon icon="fas fa-building" class="size-4 shrink-0 text-gray-500" v-tooltip="ctrans('Company Name')" fixed-width />

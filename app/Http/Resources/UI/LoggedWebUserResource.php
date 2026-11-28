@@ -32,7 +32,7 @@ class LoggedWebUserResource extends JsonResource
 
         return [
             'id'                => $webUser->id,
-            'contact_name'      => $webUser->contact_name,
+            'contact_name'      => $webUser->is_root ? ($webUser->customer->contact_name ?: $webUser->contact_name) : $webUser->contact_name,
             'username'          => $webUser->username,
             'email'             => $webUser->email,
             'customer_id'       => $webUser->customer_id,

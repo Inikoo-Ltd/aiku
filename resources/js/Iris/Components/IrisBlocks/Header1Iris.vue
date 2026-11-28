@@ -84,7 +84,7 @@ const props = defineProps<{
 const layout = inject('layout', layoutStructure)
 const isLoggedIn = computed(() => layout?.iris?.is_logged_in || false)
 const isShopB2B = computed(() => layout?.retina?.type === 'b2b')
-const displayUsername = computed(() => layout?.user?.username?.split('@')[0] || '')
+const displayName = computed(() => layout?.user?.contact_name?.trim() || layout?.user?.username?.split('@')[0] || '')
 const loginUrl = computed(() => urlLoginWithRedirect())
 const loadingRedirect = ref(false)
 const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
@@ -166,19 +166,20 @@ const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
 
 				<!-- Logged In -->
 				<template v-if="isLoggedIn">
-					<div class="flex items-center gap-3">
-						<LinkIris href="/app/dashboard" :type="'internal'"
-							v-slot="{ isLoading } = { isLoading: false }">
-							<div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100"
-								:class="{ 'cursor-wait': isLoading }">
+					<LinkIris href="/app/dashboard" :type="'internal'"
+						v-slot="{ isLoading } = { isLoading: false }">
+					<div class="flex items-center gap-3 min-w-0 cursor-pointer group"
+						:class="{ 'cursor-wait': isLoading }">
+							<div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
 								<LoadingIcon v-if="isLoading" class="text-lg text-gray-500" />
+								<Image v-else-if="layout?.user?.avatar_thumbnail" :src="layout.user.avatar_thumbnail"
+									imageCover class="w-full h-full object-cover" />
 								<FontAwesomeIcon v-else :icon="faUser" class="text-lg text-gray-500" fixed-width />
 							</div>
-						</LinkIris>
 
-						<div class="leading-tight">
+						<div class="leading-tight min-w-0">
 							<div class="flex items-center gap-2 text-sm font-medium">
-								<span>{{ displayUsername }}</span>
+								<span class="truncate max-w-[9rem] xl:max-w-[14rem] group-hover:underline" :title="displayName">{{ displayName }}</span>
 
 								<!-- <img v-if="layout?.offer_data?.amnesty || layout?.offer_data?.type === 'gr'"
 									:src="`/assets/promo/gr-${layout.retina.organisation}.png`" alt="Gold Reward Logo"
@@ -213,14 +214,14 @@ const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
 													aria-hidden="true" />
 
 												<div
-													class="relative inline-block w-20 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
+													class="relative inline-block w-24 h-3 ml-1 mt-1.5 mb-2 overflow-hidden align-middle rounded-sm bg-gray-200">
 													<div class="absolute top-0 left-0 h-full transition-all duration-1000 ease-in-out bg-green-500"
 														:class="{ xshimmer: true }" :style="{
 															width: `${(layout?.offer_data?.meter?.[0] / layout?.offer_data?.meter?.[1]) * 100}%`
 														}" />
 
 													<div
-														class="absolute inset-0 flex items-center justify-center font-medium text-black text-xxs">
+														class="absolute inset-0 flex items-center justify-center whitespace-nowrap font-medium text-black text-xxs">
 														{{ Number(layout?.offer_data?.meter?.[0]).toFixed(0) }}
 														/
 														{{ Number(layout?.offer_data?.meter?.[1]).toFixed(0) }}
@@ -234,6 +235,7 @@ const { isLoadingLogout, logout: onClickLogout } = useIrisLogout(layout)
 							</template>
 						</div>
 					</div>
+					</LinkIris>
 
 					<button v-tooltip="ctrans('Logout')"
 						class="flex items-center justify-center text-[20px] text-gray-600 bg-gray-100 rounded-full hover:text-gray-900 disabled:opacity-60 disabled:cursor-wait"
