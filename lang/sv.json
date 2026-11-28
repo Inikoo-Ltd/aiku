@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Underhåll av Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Vi uppdaterar servrarna :when (din tid). Aiku kan vara otillgängligt i cirka :minutes minuter.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Spara ditt arbete innan dess. Det du gör under den tiden kanske inte sparas.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Under tiden kan du slappna av och göra dig en kopp kaffe. Om Aiku inte är tillbaka till :back, då kan du börja få panik.",
+    "Got it": "Uppfattat",
     " Products for sale": "Produkter till salu",
     " Slots": "Spelautomater",
     " is handling this chat": "hanterar den här chatten",

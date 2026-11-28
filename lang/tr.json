@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aiku bakımı",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Sunucuları :when (sizin saatinizle) güncelleyeceğiz. Aiku yaklaşık :minutes dakika kullanılamayabilir.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Lütfen bundan önce çalışmanızı kaydedin. Bu süre içinde yaptıklarınız kaydedilmeyebilir.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Bu arada rahatlayın ve kendinize bir kahve yapın. Aiku :back itibarıyla geri dönmediyse, o zaman paniğe kapılabilirsiniz.",
+    "Got it": "Anladım",
     " Products for sale": "Satıştaki ürünler",
     " Slots": "Slot",
     " is handling this chat": "bu sohbeti yürütüyor",

@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Actions\DevOps\AnnounceMaintenance;
 use App\Events\AppVersionWebsocketEvent;
+use App\Events\MaintenanceNoticeWebsocketEvent;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Models\DevOps\AppDeployment;
@@ -1123,4 +1125,24 @@ it('records varnish per web box from the server metrics sampler and charts it on
 
     $this->get(route('grp.websites.index', ['tab' => 'varnish']))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('varnish.range', '7d'));
+});
+
+it('announces and clears a maintenance notice', function () {
+    Event::fake([MaintenanceNoticeWebsocketEvent::class]);
+
+    $startsAt = now('UTC')->addHour()->startOfMinute();
+
+    $this->artisan('maintenance:announce', ['starts_at' => $startsAt->toDateTimeString(), 'minutes' => 20])
+        ->assertSuccessful();
+
+    expect(AnnounceMaintenance::current())->toBe(['starts_at' => $startsAt->toIso8601String(), 'minutes' => 20]);
+    Event::assertDispatched(MaintenanceNoticeWebsocketEvent::class, fn ($event) => $event->broadcastWith()['notice']['minutes'] === 20);
+
+    $this->artisan('maintenance:announce', ['starts_at' => now('UTC')->subHours(2)->toDateTimeString(), 'minutes' => 10])
+        ->assertFailed();
+
+    $this->artisan('maintenance:announce', ['--clear' => true])->assertSuccessful();
+
+    expect(AnnounceMaintenance::current())->toBeNull();
+    Event::assertDispatched(MaintenanceNoticeWebsocketEvent::class, fn ($event) => $event->broadcastWith()['notice'] === null);
 });

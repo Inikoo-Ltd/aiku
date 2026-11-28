@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aiku 维护",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "我们将在 :when（您的当地时间）更新服务器。Aiku 可能会有大约 :minutes 分钟无法使用。",
+    "Please save your work before then. Anything you do during that time may not be saved.": "请在此之前保存您的工作。在此期间所做的操作可能无法保存。",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "这段时间请放松一下，给自己泡杯咖啡。如果 Aiku 到 :back 还没有恢复，您再开始着急也不迟。",
+    "Got it": "知道了",
     " Products for sale": "在售产品",
     " Slots": "仓位",
     " is handling this chat": "正在处理此聊天",

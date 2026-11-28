@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aiku karbantartás",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "A szervereket :when (helyi idő szerint) frissítjük. Az Aiku körülbelül :minutes percig nem lesz elérhető.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Kérjük, előtte mentse a munkáját. Amit ez idő alatt csinál, lehet, hogy nem mentődik el.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Addig is lazítson, és főzzön magának egy kávét. Ha az Aiku :back-ig nem jön vissza, akkor elkezdhet pánikolni.",
+    "Got it": "Értem",
     " Products for sale": "Eladó termékek",
     " Slots": "Nyerőgépek",
     " is handling this chat": "kezeli ezt a chatet",

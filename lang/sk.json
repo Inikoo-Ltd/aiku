@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Údržba Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": ":when (váš čas) budeme aktualizovať servery. Aiku môže byť asi :minutes minút nedostupné.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Dovtedy si, prosím, uložte prácu. Nič z toho, čo počas toho času urobíte, sa nemusí uložiť.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Medzitým si oddýchnite a uvarte si kávu. Ak Aiku nebude späť do :back, potom môžete začať panikáriť.",
+    "Got it": "Rozumiem",
     "Update current orders": "Aktualizovať rozpracované objednávky",
     "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Objednávky, ktoré ešte neboli fakturované, dostanú novú daň. Zrušte začiarknutie, ak ju chcete použiť len na nové objednávky. Už vystavené faktúry sa nikdy nemenia.",
     "Within 3 months of the sale we need proof the goods left the UK:": "Do 3 mesiacov od predaja potrebujeme doklad, že tovar opustil Spojené kráľovstvo:",

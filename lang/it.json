@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Manutenzione di Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Aggiorneremo i server il :when (ora locale). Aiku potrebbe non essere disponibile per circa :minutes minuti.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Salva il tuo lavoro prima di allora. Ciò che fai in quel periodo potrebbe non essere salvato.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Nel frattempo rilassati e fatti un caffè. Se Aiku non è tornato entro le :back, allora puoi iniziare a farti prendere dal panico.",
+    "Got it": "Ho capito",
     " Products for sale": "Prodotti in vendita",
     " Slots": "Slot",
     " is handling this chat": "sta gestendo questa chat",

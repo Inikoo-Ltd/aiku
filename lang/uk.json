@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Обслуговування Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Ми оновлюватимемо сервери :when (ваш час). Aiku може бути недоступним приблизно :minutes хвилин.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Будь ласка, збережіть свою роботу до цього часу. Те, що ви зробите в цей час, може не зберегтися.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Тим часом розслабтеся і зробіть собі чашку кави. Якщо Aiku не повернеться до :back, тоді можете починати панікувати.",
+    "Got it": "Зрозуміло",
     " Products for sale": "Товари на продаж",
     " Slots": "Слоти",
     " of customers recommend this": " клієнтів рекомендують це",

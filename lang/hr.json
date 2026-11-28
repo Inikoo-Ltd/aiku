@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Održavanje Aikua",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Ažurirat ćemo poslužitelje :when (vaše vrijeme). Aiku možda neće biti dostupan oko :minutes minuta.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Molimo spremite svoj rad prije toga. Ono što napravite u tom vremenu možda se neće spremiti.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "U međuvremenu se opustite i skuhajte si kavu. Ako se Aiku ne vrati do :back, tada možete početi paničariti.",
+    "Got it": "Razumijem",
     " Products for sale": "Proizvodi na prodaju",
     " Slots": "Slotovi",
     "(:paymentName) Paid :paymentAmount at :datePayment": "(:paymentName) Plaćeno :paymentAmount na :datePayment",

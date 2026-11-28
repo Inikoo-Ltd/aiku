@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Vzdrževanje Aikuja",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Strežnike bomo posodabljali :when (vaš čas). Aiku morda ne bo dosegljiv približno :minutes minut.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Prosimo, pred tem shranite svoje delo. Kar boste naredili v tem času, se morda ne bo shranilo.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Medtem se sprostite in si skuhajte kavo. Če Aiku do :back ne bo nazaj, lahko začnete paničariti.",
+    "Got it": "Razumem",
     ":promotion: ended on :date": ":promotion: končano, zadnji dan: :date",
     ":promotion: running now": ":promotion: poteka zdaj",
     ":promotion: running until :date": ":promotion: poteka, zadnji dan: :date",

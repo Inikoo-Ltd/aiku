@@ -9,6 +9,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\DevOps\AnnounceMaintenance;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveriesCostingReminder;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\AikuPublic\BlogPosts;
@@ -159,6 +160,7 @@ class HandleInertiaGrpRequests extends Middleware
                 ],
                 'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'can_move_stock' => fn () => $this->canMoveStockInRouteWarehouse($request, $user),
+                'maintenance_notice' => fn () => AnnounceMaintenance::current(),
                 'staff_calls'    => \App\Models\Chat\StaffCall::isEnabled(),
                 'organisationSelector' => fn () => AgentOrganisationSelection::fromRequest($request)?->selector(),
                 'costing_reminder' => fn () => $user && !str_starts_with($routeName, 'grp.clocking_employees.') ? GetStockDeliveriesCostingReminder::run($user) : null,

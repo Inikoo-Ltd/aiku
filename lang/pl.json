@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Konserwacja Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Zaktualizujemy serwery :when (twój czas). Aiku może być niedostępne przez około :minutes minut.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Zapisz swoją pracę przed tym czasem. To, co zrobisz w tym czasie, może nie zostać zapisane.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "W międzyczasie odpręż się i zrób sobie kawę. Jeśli Aiku nie wróci do :back, wtedy możesz zacząć panikować.",
+    "Got it": "Rozumiem",
     "Ask :name anything...": "Zapytaj o cokolwiek...",
     "Not sure where to start? Try asking me...": "Nie wiesz, od czego zacząć? Spróbuj mnie zapytać...",
     "What goes well with crystals?": "Co dobrze komponuje się z kryształami?",

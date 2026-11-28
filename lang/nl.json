@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aiku-onderhoud",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "We werken de servers bij op :when (uw tijd). Aiku is dan mogelijk ongeveer :minutes minuten niet beschikbaar.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Sla uw werk vóór die tijd op. Wat u in die tijd doet, wordt mogelijk niet opgeslagen.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Ontspan intussen en zet een kopje koffie. Als Aiku om :back nog niet terug is, mag u in paniek raken.",
+    "Got it": "Begrepen",
     " Products for sale": "Producten te koop",
     " Slots": "Slots",
     " is handling this chat": "behandelt deze chat",

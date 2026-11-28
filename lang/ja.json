@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aikuのメンテナンス",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": ":when（現地時間）にサーバーを更新します。Aikuは約:minutes分間ご利用いただけない場合があります。",
+    "Please save your work before then. Anything you do during that time may not be saved.": "それまでに作業を保存してください。その間に行った操作は保存されない可能性があります。",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "その間はリラックスして、コーヒーでも淹れてください。:backまでにAikuが戻らなければ、そのときは慌ててください。",
+    "Got it": "了解しました",
     "(SKO is a pack of :packs)": "(SKOは:packs個入りパック)",
     "1 Month": "1ヶ月",
     "1 Week": "1週間",

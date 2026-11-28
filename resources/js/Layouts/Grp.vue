@@ -40,6 +40,7 @@ import { computed } from "vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import AlertToast from "@/Components/Utils/AlertToast.vue"
 import GuruFarewellDialog from "@/Components/Utils/GuruFarewellDialog.vue"
+import MaintenanceNotice from "@/Components/Utils/MaintenanceNotice.vue"
 import { useMediaQuery, useWindowSize } from "@vueuse/core"
 import axios from "axios"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -474,6 +475,7 @@ const safeTheme = computed(() => {
     </notifications>
 
     <GuruFarewellDialog v-if="!isEmbedded" />
+    <MaintenanceNotice v-if="!isEmbedded" />
 
     <notifications
         group="alert-popups"

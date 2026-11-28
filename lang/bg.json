@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Поддръжка на Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Ще обновяваме сървърите на :when (вашето време). Aiku може да е недостъпен за около :minutes минути.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Моля, запазете работата си преди това. Всичко, което направите през това време, може да не бъде запазено.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Междувременно се отпуснете и си направете чаша кафе. Ако Aiku не се е върнал до :back, тогава можете да започнете да се паникьосвате.",
+    "Got it": "Разбрах",
     " Products for sale": "_Продукти за продажба",
     " Slots": "_Слотове",
     " is handling this chat": "обслужва този чат",

@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aiku apkope",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Mēs atjaunināsim serverus :when (jūsu laiks). Aiku var nebūt pieejams aptuveni :minutes minūtes.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Lūdzu, pirms tam saglabājiet savu darbu. Tas, ko darīsiet šajā laikā, var netikt saglabāts.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Tikmēr atpūtieties un uztaisiet sev tasi kafijas. Ja Aiku līdz :back nav atpakaļ, tad varat sākt krist panikā.",
+    "Got it": "Sapratu",
     "+ Custom connector": "+ Pielāgots savienotājs",
     "+ Product information": "+ Informācija par produktu",
     "+:quantity :code on :step by :maker, authorised by :manager via :method": "+:quantity :code solī :step, veica :maker, apstiprināja :manager, izmantojot :method",

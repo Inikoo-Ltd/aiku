@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Aiku-Wartung",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Wir aktualisieren die Server am :when (Ihre Zeit). Aiku ist dann etwa :minutes Minuten lang möglicherweise nicht erreichbar.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Bitte speichern Sie Ihre Arbeit vorher. Was Sie in dieser Zeit tun, wird möglicherweise nicht gespeichert.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Lehnen Sie sich in der Zwischenzeit zurück und machen Sie sich einen Kaffee. Wenn Aiku um :back nicht wieder da ist, dürfen Sie in Panik geraten.",
+    "Got it": "Verstanden",
     "Update current orders": "Laufende Bestellungen aktualisieren",
     "Orders not invoiced yet get the new tax. Untick to apply it only to new orders. Invoices already issued never change.": "Noch nicht fakturierte Bestellungen erhalten die neue Steuer. Deaktivieren, um sie nur auf neue Bestellungen anzuwenden. Bereits ausgestellte Rechnungen ändern sich nie.",
     "The invoice date could not be saved": "Das Rechnungsdatum konnte nicht gespeichert werden",

@@ -1,4 +1,9 @@
 {
+    "Aiku maintenance": "Pemeliharaan Aiku",
+    "We will be updating the servers on :when (your time). Aiku may be unavailable for about :minutes minutes.": "Kami akan memperbarui server pada :when (waktu Anda). Aiku mungkin tidak dapat digunakan selama sekitar :minutes menit.",
+    "Please save your work before then. Anything you do during that time may not be saved.": "Simpan pekerjaan Anda sebelum itu. Apa pun yang Anda lakukan selama waktu tersebut mungkin tidak tersimpan.",
+    "Meanwhile, relax and make yourself a cup of coffee. If Aiku is not back by :back, then you can start to panic.": "Sementara itu, santai saja dan buat secangkir kopi. Jika Aiku belum kembali pada :back, barulah Anda boleh panik.",
+    "Got it": "Mengerti",
     " Products for sale": "Produk dijual",
     " Slots": "Slot",
     " is handling this chat": "sedang menangani obrolan ini",
