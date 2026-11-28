@@ -1217,6 +1217,91 @@ test('a note picked in another company\'s warehouse cannot be deleted, and its r
     expect($homeNote->fresh()->trashed())->toBeTrue();
 });
 
+test('a note shipped from another company\'s warehouse leaves one charge with the terms of its dispatch, reversed by undoing it and back on the next dispatch', function () {
+    giveReturnStatsTheColumnProductionHas();
+    [$order, $dispatcher, $sko, , $orgPartner] = crossDispatchOrder($this, 10);
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['dispatch_fee_per_parcel' => 1.5]);
+    $chargeOf = fn ($deliveryNote) => \App\Models\Dispatching\CrossDispatchCharge::where('delivery_note_id', $deliveryNote->id)->get();
+
+    $deliveryNote = pickPackAndDispatch(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher), $this->user);
+    $charge       = $chargeOf($deliveryNote)->sole();
+    expect($charge->state)->toBe(\App\Enums\Dispatching\CrossDispatch\CrossDispatchChargeStateEnum::OPEN)
+        ->and([$charge->organisation_id, $charge->ordering_organisation_id, $charge->org_partner_id, $charge->order_id, $charge->shop_id, $charge->currency_id])
+        ->toBe([$dispatcher->id, $this->organisation->id, $orgPartner->id, $order->id, $this->shop->id, $dispatcher->currency_id])
+        ->and($charge->terms['dispatch_fee_per_parcel'])->toBe(1.5)
+        ->and([$charge->number_parcels, (float) $charge->dispatch_fee, $charge->shipping_amount, $charge->shipping_cost_source])->toBe([1, 1.5, null, 'missing'])
+        ->and(collect($charge->lines)->map(fn ($line) => [$line['org_stock_id'], (float) $line['quantity']])->all())->toBe([[$sko->id, 10.0]]);
+
+    $movementIds = $deliveryNote->pickings()->pluck('org_stock_movement_id')->filter()->all();
+    DB::table('org_stock_movements')->whereIn('id', $movementIds)->update(['org_amount' => -30]);
+    $charge->update(['costed_at' => null]);
+    \App\Actions\Dispatching\CrossDispatch\CostCrossDispatchCharge::run($charge);
+    $charge = $charge->fresh();
+    expect($movementIds)->toHaveCount(1)
+        ->and([(float) $charge->lines[0]['unit_cost'], (float) $charge->lines[0]['amount'], $charge->lines[0]['cost_source'], (float) $charge->goods_amount])->toBe([3.0, 30.0, 'picked_stock', 30.0])
+        ->and($charge->costed_at)->not->toBeNull();
+
+    $pickingId = $deliveryNote->pickings()->value('id');
+    DB::table('pickings')->where('id', $pickingId)->update(['org_stock_movement_id' => null]);
+    $charge->update(['costed_at' => null]);
+    $queue = app('queue');
+    \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Dispatching\CrossDispatch\CostCrossDispatchCharge::run($charge);
+    \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, fn ($job) => $job->decorates(\App\Actions\Dispatching\CrossDispatch\CostCrossDispatchCharge::class));
+    $charge = $charge->fresh();
+    expect([$charge->lines[0]['amount'], $charge->lines[0]['cost_source'], $charge->goods_amount, $charge->costed_at])->toBe([null, 'waiting_for_stock_movement', null, null]);
+    DB::table('pickings')->where('id', $pickingId)->update(['org_stock_movement_id' => $movementIds[0]]);
+    \Illuminate\Support\Facades\Queue::swap($queue);
+    (new \Illuminate\Bus\UniqueLock(app(\Illuminate\Contracts\Cache\Repository::class)))->release(\App\Actions\Dispatching\CrossDispatch\CostCrossDispatchCharge::makeUniqueJob($charge));
+
+    DB::table('org_stock_movements')->whereIn('id', $movementIds)->update(['org_amount' => 0]);
+    $sko->updateQuietly(['current_supplier_sku_cost' => null]);
+    DB::table('org_stock_histories')->where('org_stock_id', $sko->id)->update(['fifo_per_sku' => 2.5, 'lpp_per_sku' => null]);
+    $charge->update(['costed_at' => null]);
+    \App\Actions\Dispatching\CrossDispatch\CostCrossDispatchCharge::run($charge);
+    $charge = $charge->fresh();
+    expect([(float) $charge->lines[0]['amount'], $charge->lines[0]['cost_source'], (float) $charge->goods_amount])->toBe([25.0, 'landed_cost', 25.0]);
+
+    DB::table('org_stock_histories')->where('org_stock_id', $sko->id)->update(['fifo_per_sku' => null, 'lpp_per_sku' => null]);
+    $charge->update(['costed_at' => null]);
+    \App\Actions\Dispatching\CrossDispatch\CostCrossDispatchCharge::run($charge);
+    $charge = $charge->fresh();
+    expect([$charge->lines[0]['amount'], $charge->lines[0]['cost_source'], $charge->goods_amount, $charge->costed_at])->toBe([null, 'missing', null, null]);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['dispatch_fee_per_parcel' => 9]);
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->fresh(), null, true);
+    expect($chargeOf($deliveryNote))->toHaveCount(1)
+        ->and($chargeOf($deliveryNote)->sole()->terms['dispatch_fee_per_parcel'])->toBe(1.5);
+
+    \App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder::make()->action($order->fresh());
+    expect($chargeOf($deliveryNote)->sole()->state)->toBe(\App\Enums\Dispatching\CrossDispatch\CrossDispatchChargeStateEnum::REVERSED)
+        ->and($chargeOf($deliveryNote)->sole()->reversed_at)->not->toBeNull();
+
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->fresh());
+    $charge = $chargeOf($deliveryNote)->sole();
+    expect($charge->state)->toBe(\App\Enums\Dispatching\CrossDispatch\CrossDispatchChargeStateEnum::OPEN)
+        ->and([$charge->terms['dispatch_fee_per_parcel'], (float) $charge->dispatch_fee, $charge->reversed_at])->toEqual([9.0, 9.0, null]);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['dispatch_fee_per_parcel' => 4]);
+    DB::table('delivery_notes')->where('id', $deliveryNote->id)->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::PACKED->value]);
+    \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->fresh());
+    expect($chargeOf($deliveryNote))->toHaveCount(1)
+        ->and((float) $chargeOf($deliveryNote)->sole()->dispatch_fee)->toBe(4.0);
+
+    $replacement = pickPackAndDispatch(\App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote::make()->action($order->refresh(), [
+        'delivery_note_items' => [['id' => $deliveryNote->deliveryNoteItems()->sole()->id, 'quantity' => 1, 'reason' => 'damaged_in_transit']],
+    ]), $this->user);
+    expect($chargeOf($replacement)->sole()->state)->toBe(\App\Enums\Dispatching\CrossDispatch\CrossDispatchChargeStateEnum::OPEN)
+        ->and(collect($chargeOf($replacement)->sole()->lines)->map(fn ($line) => (float) $line['quantity'])->all())->toBe([1.0]);
+    \App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote::make()->handle($replacement->fresh());
+    expect($chargeOf($replacement)->sole()->state)->toBe(\App\Enums\Dispatching\CrossDispatch\CrossDispatchChargeStateEnum::REVERSED)
+        ->and($chargeOf($deliveryNote)->sole()->state)->toBe(\App\Enums\Dispatching\CrossDispatch\CrossDispatchChargeStateEnum::OPEN);
+
+    [$homeOrder] = submittedOrderWithTransaction($this->customer, $this->product, 10);
+    $homeNote    = pickPackAndDispatch(SendOrderToWarehouse::make()->action($homeOrder, []), $this->user);
+    expect($chargeOf($homeNote))->toHaveCount(0);
+});
+
 test('a note is told apart as cross dispatched however it was loaded, and a home note never reads as one', function () {
     [$order, $dispatcher] = crossDispatchOrder($this, 10);
     $crossNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher);

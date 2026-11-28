@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Dispatching\CrossDispatch\ReverseCrossDispatchCharge;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -33,6 +34,7 @@ class RollbackDispatchedOrder extends OrgAction
                         'state' => DeliveryNoteStateEnum::FINALISED,
                         'dispatched_at' => null,
                     ]);
+                    ReverseCrossDispatchCharge::run($deliveryNote);
 
                     foreach ($deliveryNote->deliveryNoteItems as $item) {
                         if ($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {
@@ -81,6 +83,7 @@ class RollbackDispatchedOrder extends OrgAction
 
     public function action(Order $order, $fromDeliveryNote = false): void
     {
+        $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
 
         $this->handle($order, $fromDeliveryNote);

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Comms\Email\SendUnDispatchedOrderEmailToSubscribers;
+use App\Actions\Dispatching\CrossDispatch\ReverseCrossDispatchCharge;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\OrgAction;
@@ -41,6 +42,7 @@ class UndispatchDeliveryNote extends OrgAction
             'dispatched_at' => null,
             'finalised_at' => null
         ]);
+        ReverseCrossDispatchCharge::run($deliveryNote);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             if ($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {

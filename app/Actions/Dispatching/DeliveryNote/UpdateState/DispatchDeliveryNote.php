@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\CrossDispatch\StoreCrossDispatchCharge;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteShipmentAuthorisation;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
@@ -83,6 +84,8 @@ class DispatchDeliveryNote extends OrgAction
             } elseif (!$repair) {
                 SendDispatchedReplacementOrderEmailToCustomer::dispatch($deliveryNote);
             }
+
+            StoreCrossDispatchCharge::run($deliveryNote, $repair);
 
             return $deliveryNote;
         });
