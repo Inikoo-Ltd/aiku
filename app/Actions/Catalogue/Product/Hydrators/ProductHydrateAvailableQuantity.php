@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
+use App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Traits\AsUniqueUntilProcessingAction;
 use App\Actions\Traits\WithEnumStats;
@@ -22,6 +23,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
@@ -37,6 +39,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
     private ?ResolveCrossDispatch $resolver = null;
 
     private bool $preloadOtherWarehouses = false;
+
+    /** @var array<int, bool> */
+    private array $shopListsOtherWarehouses = [];
 
     /** Storefronts read a stock of 250 or more as "Unlimited quantity available". */
     public const int ON_DEMAND_QUANTITY = 250;
@@ -118,6 +123,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
 
 
         $currentQuantity          = $product->available_quantity;
+        $currentElsewhere         = $product->available_quantity_elsewhere;
         $currentHomeQuantity      = ($currentQuantity ?? 0) - $product->available_quantity_elsewhere;
         $neverStockedOnlyElsewhere = $product->available_quantity_elsewhere > 0 && $currentHomeQuantity <= 0 && !$product->first_in_stock_at && !$product->first_available_at;
 
@@ -172,7 +178,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
             $dataToUpdate['back_in_stock_since'] = now();
         }
 
-        if ($currentHomeQuantity <= 0 && $homeQuantity > 0 && ($product->status === ProductStatusEnum::COMING_SOON || $neverStockedOnlyElsewhere)) {
+        $elsewhereMarksNew = ($quantityElsewhere > 0 || $product->available_quantity_elsewhere > 0) && $product->shop->stockElsewhereSetting('marks_new');
+        if ($elsewhereMarksNew
+            ? $currentQuantity == 0 && $availableQuantity > 0 && $product->status === ProductStatusEnum::COMING_SOON
+            : $currentHomeQuantity <= 0 && $homeQuantity > 0 && ($product->status === ProductStatusEnum::COMING_SOON || $neverStockedOnlyElsewhere)) {
             $dataToUpdate['first_in_stock_at'] = now();
         }
 
@@ -206,6 +215,11 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
 
         $product = UpdateProduct::run($product, $dataToUpdate);
         $product = ProductHydrateFirstAvailableAt::run($product);
+
+        if (($availableQuantity != $currentQuantity || $quantityElsewhere != $currentElsewhere)
+            && ($this->shopListsOtherWarehouses[$product->shop_id] ??= (bool) Arr::get($product->shop->settings, 'stock_from_other_warehouses'))) {
+            RerouteOrderHeldForOtherWarehouse::dispatchForProduct($product);
+        }
 
         $wentOutOfStock = ($currentQuantity ?? 0) > 0 && $availableQuantity == 0;
         $cameBackInStock = ($currentQuantity ?? 0) == 0 && $availableQuantity > 0;
@@ -249,7 +263,8 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
 
     public function asCommand(Command $command): void
     {
-        $this->otherWarehousesByShop  = [];
+        $this->otherWarehousesByShop    = [];
+        $this->shopListsOtherWarehouses = [];
         $this->resolver               = null;
         $this->preloadOtherWarehouses = false;
 

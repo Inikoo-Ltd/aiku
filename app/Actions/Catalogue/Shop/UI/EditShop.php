@@ -956,7 +956,7 @@ class EditShop extends OrgAction
                         'stock_from_other_warehouses' => [
                             'type'        => 'stock_from_other_warehouses',
                             'label'       => __('Warehouses of other companies'),
-                            'information' => __('Products out of stock here can be sold from these warehouses when they hold the same product in the same pack. The safety margin is the number of SKOs kept back in each warehouse. Only companies that switched cross dispatch on for this company, on both sides, can be added.'),
+                            'information' => __('Products out of stock here can be sold from these warehouses when they hold the same product in the same pack. The safety margin is the number of SKOs kept back in each warehouse. Only companies that switched cross dispatch on for this company, on both sides, can be added, and a warehouse across a customs border (UK and EU) counts only when the pair allows customs crossings in Cross dispatch. A product shows what the best single warehouse can ship, never the sum of all of them, because an order is never split between warehouses.'),
                             'warning'     => UpdateShop::STOCK_FROM_OTHER_WAREHOUSES_IS_LIVE ? null : UpdateShop::stockFromOtherWarehousesNotLiveMessage(),
                             'readonly'    => !UpdateShop::STOCK_FROM_OTHER_WAREHOUSES_IS_LIVE,
                             'full'        => true,
@@ -966,6 +966,32 @@ class EditShop extends OrgAction
                                 'name'            => $direction->partner->name,
                                 'enabled'         => $direction->isCrossDispatchEnabled(),
                             ])->values()->all(),
+                        ],
+                        'stock_elsewhere_only_elsewhere' => [
+                            'type'        => 'select',
+                            'label'       => __('When only another warehouse can ship the whole order'),
+                            'information' => __('The first warehouse of the list above that can ship it whole, after its safety margin, gets the order. A held order waits on the order page, where staff send it there, send it home or cancel it, and it is sent again by itself when the stock it needs arrives. TikTok and collection orders always stay home.'),
+                            'value'       => $shop->stockElsewhereSetting('only_elsewhere'),
+                            'options'     => [
+                                ['label' => __('Send it there by itself'), 'value' => 'send'],
+                                ['label' => __('Hold it for staff'), 'value' => 'hold'],
+                            ],
+                        ],
+                        'stock_elsewhere_mixed' => [
+                            'type'        => 'select',
+                            'label'       => __('When no single warehouse can ship the whole order'),
+                            'information' => __('Some lines are only here and others only in another warehouse. Held, staff see the reason on the order; sent home, it waits in this warehouse for the missing stock.'),
+                            'value'       => $shop->stockElsewhereSetting('mixed'),
+                            'options'     => [
+                                ['label' => __('Hold it for staff with the reason'), 'value' => 'hold'],
+                                ['label' => __('Send it home as today'), 'value' => 'home'],
+                            ],
+                        ],
+                        'stock_elsewhere_marks_new' => [
+                            'type'        => 'toggle',
+                            'label'       => __('Stock in other warehouses can mark products as new'),
+                            'information' => __('Off: a product sold only from another warehouse is not shown as new and is not announced as a new arrival; that happens when stock arrives here.'),
+                            'value'       => (bool) $shop->stockElsewhereSetting('marks_new'),
                         ],
                     ],
                 ] : [],

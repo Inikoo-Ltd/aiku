@@ -1071,6 +1071,28 @@ class Shop extends Model implements HasMedia, Auditable
     }
 
     /**
+     * INI-485 D1/D4/D6, editable on the shop settings: what an order does when only another warehouse can ship it whole
+     * (send it there, or hold it for staff), when no single warehouse can (hold it, or send it home to wait for stock),
+     * and whether stock in other warehouses alone can mark a product as new.
+     */
+    public const array STOCK_ELSEWHERE_DEFAULTS = [
+        'only_elsewhere' => 'send',
+        'mixed'          => 'hold',
+        'marks_new'      => false,
+    ];
+
+    public function stockElsewhereSetting(string $key): mixed
+    {
+        $value = Arr::get($this->settings, "stock_elsewhere.$key");
+
+        return match ($key) {
+            'only_elsewhere' => in_array($value, ['send', 'hold'], true) ? $value : self::STOCK_ELSEWHERE_DEFAULTS[$key],
+            'mixed'          => in_array($value, ['hold', 'home'], true) ? $value : self::STOCK_ELSEWHERE_DEFAULTS[$key],
+            default          => $value === null || $value === '' ? self::STOCK_ELSEWHERE_DEFAULTS[$key] : (bool) $value,
+        };
+    }
+
+    /**
      * The entries of a stored stock_from_other_warehouses list that name a company and a margin, as integers; anything
      * else written there by hand is skipped, so bad settings never break a stock movement.
      *

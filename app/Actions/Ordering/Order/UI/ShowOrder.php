@@ -74,6 +74,7 @@ use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use App\Actions\Dispatching\CrossDispatch\RouteOrderToOtherWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -510,6 +511,18 @@ class ShowOrder extends OrgAction
                         'parameters' => ['order' => $order->id],
                         'body'       => ['despite_hold' => true],
                     ],
+                    'other_warehouses' => Arr::has($order->data ?? [], SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD)
+                        ? array_map(fn (array $option) => [
+                            'name'      => $option['organisation']->name,
+                            'can_ship'  => $option['can_ship'],
+                            'shortfall' => $option['shortfall'],
+                            'route'     => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.state.in-other-warehouse',
+                                'parameters' => ['order' => $order->id, 'organisation' => $option['organisation']->id],
+                            ],
+                        ], RouteOrderToOtherWarehouse::make()->warehouseOptions($order))
+                        : [],
                 ] : null,
                 'email_customer' => $order->customer && StartCustomerEmailChat::canBeStartedBy($request->user(), $order->customer) ? [
                     'email'   => $order->customer->email,

@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop;
 use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops;
 use App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses;
+use App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse;
 use App\Actions\CRM\Appointment\Zoom\ZoomClient;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
@@ -133,8 +134,10 @@ class UpdateShop extends OrgAction
             $validator->errors()->add('faire_order_from_days', __('Only organisation admins can change the days to dispatch.'));
         }
 
-        if (!$this->asAction && $request->has('stock_from_other_warehouses') && !$request->user()->authTo(['organisations.edit', 'org-admin.' . $this->shop->organisation_id])) {
-            $validator->errors()->add('stock_from_other_warehouses', __('Only organisation admins can change which warehouses of other companies this shop counts.'));
+        $stockElsewhereKey = collect(['stock_from_other_warehouses', ...array_map(fn (string $key) => "stock_elsewhere_$key", array_keys(Shop::STOCK_ELSEWHERE_DEFAULTS))])
+            ->first(fn (string $key) => $request->has($key));
+        if (!$this->asAction && $stockElsewhereKey && !$request->user()->authTo(['organisations.edit', 'org-admin.' . $this->shop->organisation_id])) {
+            $validator->errors()->add($stockElsewhereKey, __('Only organisation admins can change how this shop uses the warehouses of other companies.'));
         }
     }
 
@@ -150,6 +153,7 @@ class UpdateShop extends OrgAction
         $originalChatEnabled             = (bool) Arr::get($shop->settings ?? [], 'chat.enabled', ShopPermissionsEnum::shopHasChat($shop));
 
         $originalStockFromOtherWarehouses   = Shop::wellFormedStockFromOtherWarehouses(Arr::get($shop->settings ?? [], 'stock_from_other_warehouses'));
+        $originalStockElsewhereMarksNew     = $shop->stockElsewhereSetting('marks_new');
         $originalPackagingAndInsertsEnabled = (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false);
 
         /* Read off the shop rather than the payload because the two callers name these
@@ -308,6 +312,13 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
+        }
+
+        foreach (array_keys(Shop::STOCK_ELSEWHERE_DEFAULTS) as $stockElsewhereSetting) {
+            if (Arr::has($modelData, "stock_elsewhere_$stockElsewhereSetting")) {
+                $value = Arr::pull($modelData, "stock_elsewhere_$stockElsewhereSetting");
+                data_set($modelData, "settings.stock_elsewhere.$stockElsewhereSetting", $stockElsewhereSetting === 'marks_new' ? (bool) $value : $value);
+            }
         }
 
         if (Arr::has($modelData, 'stock_from_other_warehouses')) {
@@ -897,11 +908,19 @@ class UpdateShop extends OrgAction
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
 
+        if (Arr::has($modelData, 'settings.stock_elsewhere.marks_new') && $shop->stockElsewhereSetting('marks_new') !== $originalStockElsewhereMarksNew) {
+            DB::afterCommit(fn () => HydrateProductsStockFromOtherWarehouses::dispatch($shop));
+        }
+
         if (Arr::has($modelData, 'settings.stock_from_other_warehouses')) {
             DB::afterCommit(function () use ($shop, $originalStockFromOtherWarehouses) {
                 OrgStockHydrateProductsInOtherShops::forgetShopsListing();
-                if (Shop::wellFormedStockFromOtherWarehouses(Arr::get($shop->settings, 'stock_from_other_warehouses')) != $originalStockFromOtherWarehouses) {
+                $stockFromOtherWarehouses = Shop::wellFormedStockFromOtherWarehouses(Arr::get($shop->settings, 'stock_from_other_warehouses'));
+                if ($stockFromOtherWarehouses != $originalStockFromOtherWarehouses) {
                     HydrateProductsStockFromOtherWarehouses::dispatch($shop);
+                }
+                if (array_diff(array_column($originalStockFromOtherWarehouses, 'organisation_id'), array_column($stockFromOtherWarehouses, 'organisation_id'))) {
+                    RerouteOrderHeldForOtherWarehouse::dispatchForShop($shop);
                 }
             });
         }
@@ -1484,6 +1503,10 @@ class UpdateShop extends OrgAction
             $rules['stock_from_other_warehouses.*.organisation_id'] = ['required', 'integer', 'distinct', Rule::in($this->shop->crossDispatchDirections()->filter->isCrossDispatchEnabled()->keys()->all())];
             $rules['stock_from_other_warehouses.*.safety_margin']   = ['required', 'integer', 'min:0'];
         }
+
+        $rules['stock_elsewhere_only_elsewhere'] = ['sometimes', Rule::in(['send', 'hold'])];
+        $rules['stock_elsewhere_mixed']          = ['sometimes', Rule::in(['hold', 'home'])];
+        $rules['stock_elsewhere_marks_new']      = ['sometimes', 'boolean'];
 
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);

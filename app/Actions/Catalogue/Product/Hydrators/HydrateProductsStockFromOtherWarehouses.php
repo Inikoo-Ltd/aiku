@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops;
+use App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -79,7 +80,7 @@ class HydrateProductsStockFromOtherWarehouses implements ShouldBeUniqueUntilProc
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
-        $command->info('Queued '.$this->handle().' products.');
+        $command->info('Queued '.$this->handle().' products and '.RerouteOrderHeldForOtherWarehouse::dispatchForAll().' orders held for another warehouse.');
 
         return 0;
     }

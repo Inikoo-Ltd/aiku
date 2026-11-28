@@ -103,6 +103,7 @@ class CancelOrder extends OrgAction
 
         DB::transaction(function () use ($order, $orderData, $date, $modelData, $reason, $notes, $isRefundToOriginalPayment, $staffMode) {
             $this->update($order, $orderData);
+            SendOrderToWarehouse::forgetOtherWarehouseHold($order);
 
             $this->cancelTransactions($order, $date);
 

@@ -1807,7 +1807,14 @@ test('an order the home warehouse cannot cover still gets its delivery note at h
 
     expect(array_key_exists($dispatcher->id, GetCrossDispatchCoverage::run($order->fresh())))->toBe($setup === 'none');
 
+    $queries = [];
+    DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
     $deliveryNote = SendOrderToWarehouse::make()->action($order->fresh(), []);
+    if ($setup === 'none') {
+        expect(collect($queries)->filter(fn (string $sql) => str_contains($sql, 'org_partners') || str_contains($sql, '"products"."available_quantity_elsewhere" >'))->all())->toBe([]);
+    }
 
     expect($deliveryNote->isCrossDispatch())->toBeFalse()
         ->and(deliveryNoteFingerprint($deliveryNote))->toEqual([
@@ -2453,5 +2460,386 @@ test('a failing lookup of the shops counting another company never breaks the st
         app()->forgetInstance(ResolveCrossDispatch::class);
         $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
         \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+    }
+});
+
+/**
+ * INI-485 step 7. The fixture shop selling the other company's stock (margin 0), its products hydrated, with the order settings given.
+ *
+ * @return array{0: array<string, Product>, 1: array<string, OrgStock>, 2: \App\Models\SysAdmin\Organisation, 3: \Closure}
+ */
+function shopRoutingToOtherWarehouse($test, array $orderSettings = []): array
+{
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($test, 'none');
+    $test->shop->updateQuietly(['settings' => array_merge($test->shop->fresh()->settings ?? [], [
+        'stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 0]],
+        'stock_elsewhere'             => $orderSettings,
+    ])]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+    foreach (['in_stock', 'at_zero'] as $key) {
+        $theirSko = OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos[$key]->stock_id)->sole();
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($dispatcher->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(orgStock: $theirSko, location: $location, modelData: ['quantity' => 1000, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()], strict: false);
+    }
+    foreach ($products as $product) {
+        \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($product->fresh());
+    }
+    expect($products['at_zero']->fresh()->available_quantity_elsewhere)->toBe(1000);
+
+    $submit = function (array $lines, array $orderAttributes = []) use ($test): \App\Models\Ordering\Order {
+        $order = StoreOrder::make()->action($test->customer, []);
+        foreach ($lines as [$product, $quantity]) {
+            StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => $quantity]);
+        }
+        $order = SubmitOrder::make()->action($order->refresh());
+        if ($orderAttributes) {
+            $order->updateQuietly($orderAttributes);
+        }
+
+        return $order->fresh();
+    };
+
+    return [$products, $skos, $dispatcher, $submit];
+}
+
+function forgetShopRoutingToOtherWarehouse($test): void
+{
+    $test->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($test->shop->fresh()->settings ?? [], ['stock_from_other_warehouses', 'stock_elsewhere'])]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+}
+
+test('an order only another warehouse can ship goes there by itself, and one home covers stays home', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this);
+    $theirSko = OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['at_zero']->stock_id)->sole();
+
+    try {
+        $order        = $submit([[$products['at_zero'], 3]]);
+        $toBePicked   = fn () => \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::make()->getQuantityToBePicked($theirSko->id);
+        $pickedBefore = $toBePicked();
+        $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+        expect($deliveryNote->isCrossDispatch())->toBeTrue()
+            ->and($deliveryNote->organisation_id)->toBe($dispatcher->id)
+            ->and($deliveryNote->deliveryNoteItems()->pluck('org_stock_id')->all())->toBe([$theirSko->id])
+            ->and($toBePicked() - $pickedBefore)->toBe(3.0)
+            ->and($order->fresh()->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+
+        $homeOrder = $submit([[$products['in_stock'], 2]]);
+        $homeNote  = SendOrderToWarehouse::make()->action($homeOrder, []);
+        expect($homeNote->isCrossDispatch())->toBeFalse()
+            ->and($homeNote->organisation_id)->toBe($this->organisation->id);
+    } finally {
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('an order held for another warehouse waits submitted with its reason, and staff send it home or to that warehouse', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this, ['only_elsewhere' => 'hold']);
+    $staff = userWithOnlyPermissions($this->organisation, ["orders.{$this->shop->id}.edit"]);
+
+    try {
+        $order = $submit([[$products['at_zero'], 3]]);
+        expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull();
+        $order = $order->fresh();
+        expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and($order->deliveryNotes()->count())->toBe(0)
+            ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toContain($dispatcher->name)
+            ->and(SendOrderToWarehouse::make()->blockedReason($order))->toContain($dispatcher->name);
+
+        actingAsUserWithOnlyPermissions($staff, ["orders.{$this->shop->id}.edit"]);
+        $this->patch(route('grp.models.order.state.in-other-warehouse', [$order->id, $dispatcher->id]))->assertSessionHasNoErrors();
+        $order = $order->fresh();
+        expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and($order->deliveryNotes()->sole()->organisation_id)->toBe($dispatcher->id)
+            ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toBeNull()
+            ->and(\Illuminate\Support\Arr::has($order->data, SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD))->toBeFalse();
+
+        $second = $submit([[$products['at_zero'], 2]]);
+        SendOrderToWarehouse::make()->action($second, []);
+        $this->patch(route('grp.models.order.state.in-warehouse', [$second->id]), ['despite_hold' => true])->assertSessionHasNoErrors();
+        $second = $second->fresh();
+        expect($second->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and($second->deliveryNotes()->sole()->organisation_id)->toBe($this->organisation->id);
+    } finally {
+        actingAs($this->user);
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('an order no single warehouse can ship is held or sent home as the shop chooses', function () {
+    foreach (['hold' => true, 'home' => false] as $mixed => $held) {
+        [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this, ['mixed' => $mixed]);
+        OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['in_stock']->stock_id)->sole()->updateQuietly(['quantity_available' => 0]);
+
+        try {
+            $order        = $submit([[$products['in_stock'], 2], [$products['at_zero'], 3]]);
+            $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+            $order        = $order->fresh();
+            if ($held) {
+                expect($deliveryNote)->toBeNull()
+                    ->and($order->state)->toBe(OrderStateEnum::SUBMITTED)
+                    ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toContain('no single warehouse');
+            } else {
+                expect($deliveryNote->organisation_id)->toBe($this->organisation->id)
+                    ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+            }
+        } finally {
+            forgetShopRoutingToOtherWarehouse($this);
+        }
+    }
+});
+
+test('TikTok, pre-order and collection orders are never sent to another warehouse', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this);
+
+    try {
+        $tiktok = $submit([[$products['at_zero'], 1]], ['platform_id' => \App\Models\Dropshipping\Platform::where('type', PlatformTypeEnum::TIKTOK)->firstOrFail()->id]);
+        $collection = $submit([[$products['at_zero'], 1]]);
+        $collection->updateQuietly(['collection_address_id' => $collection->delivery_address_id]);
+        $preOrdered = $submit([[$products['at_zero'], 1]]);
+        PreOrder::create([
+            'group_id'        => $preOrdered->group_id,
+            'organisation_id' => $preOrdered->organisation_id,
+            'shop_id'         => $preOrdered->shop_id,
+            'customer_id'     => $preOrdered->customer_id,
+            'order_id'        => $preOrdered->id,
+            'state'           => PreOrderStateEnum::RELEASED,
+            'is_trade'        => false,
+            'upfront_amount'  => 0,
+            'deferred_amount' => 0,
+        ]);
+
+        foreach ([$tiktok, $collection, $preOrdered] as $order) {
+            $deliveryNote = SendOrderToWarehouse::make()->action($order->fresh(), []);
+            expect($deliveryNote?->organisation_id)->toBe($this->organisation->id)
+                ->and(SendOrderToWarehouse::heldReason($order->fresh()->private_warehouse_note))->toBeNull();
+        }
+    } finally {
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('a refused or failing send to another warehouse holds the order and never breaks the payment that sent it', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this);
+
+    try {
+        foreach ([\Illuminate\Validation\ValidationException::withMessages(['cross_dispatch' => ['reference taken']]), new RuntimeException('broken')] as $failure) {
+            $this->mock(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::class)->shouldReceive('handle')->andThrow($failure);
+
+            $order = StoreOrder::make()->action($this->customer, []);
+            StoreTransaction::make()->action($order, $products['at_zero']->historicAsset, ['quantity_ordered' => 2]);
+            $order->refresh()->updateQuietly(['pay_status' => OrderPayStatusEnum::PAID]);
+            $order = SubmitOrder::make()->action($order->refresh())->fresh();
+
+            expect($order->state)->toBe(OrderStateEnum::SUBMITTED)
+                ->and($order->deliveryNotes()->count())->toBe(0)
+                ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toContain($dispatcher->name);
+            app()->forgetInstance(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::class);
+        }
+    } finally {
+        app()->forgetInstance(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::class);
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('organisation admins choose how orders use other warehouses and whether their stock marks products new, shop admins cannot', function () {
+    [$products, $skos, $dispatcher] = shopRoutingToOtherWarehouse($this);
+    $update = fn (array $data) => $this->patch(route('grp.models.org.shop.update', [$this->organisation->id, $this->shop->id]), $data);
+
+    try {
+        actingAsUserWithOnlyPermissions(userWithOnlyPermissions($this->organisation, ['shop-admin.'.$this->shop->id]), ['shop-admin.'.$this->shop->id]);
+        $update(['stock_elsewhere_mixed' => 'home'])->assertSessionHasErrors('stock_elsewhere_mixed');
+        expect($this->shop->fresh()->stockElsewhereSetting('mixed'))->toBe('hold');
+
+        actingAsUserWithOnlyPermissions(userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]), ['org-admin.'.$this->organisation->id]);
+        $update(['stock_elsewhere_only_elsewhere' => 'elsewhere'])->assertSessionHasErrors('stock_elsewhere_only_elsewhere');
+        foreach (['stock_elsewhere_only_elsewhere' => 'hold', 'stock_elsewhere_mixed' => 'home', 'stock_elsewhere_marks_new' => true] as $field => $value) {
+            $update([$field => $value])->assertSessionHasNoErrors();
+        }
+        $shop = $this->shop->fresh();
+        expect([$shop->stockElsewhereSetting('only_elsewhere'), $shop->stockElsewhereSetting('mixed'), $shop->stockElsewhereSetting('marks_new')])->toBe(['hold', 'home', true]);
+
+        $products['at_zero']->fresh()->updateQuietly(['status' => \App\Enums\Catalogue\Product\ProductStatusEnum::COMING_SOON, 'has_live_webpage' => true, 'available_quantity' => 0, 'available_quantity_elsewhere' => 0, 'first_in_stock_at' => null, 'first_available_at' => null]);
+        $product = \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['at_zero']->fresh())->fresh();
+        expect($product->available_quantity_elsewhere)->toBe(1000)
+            ->and($product->first_in_stock_at)->not->toBeNull()
+            ->and($product->first_available_at)->not->toBeNull();
+    } finally {
+        actingAs($this->user);
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('staff send a held order only to a warehouse the shop counts, of an order of a shop they edit', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this, ['only_elsewhere' => 'hold']);
+    $orgPartner = ResolveCrossDispatch::direction($this->organisation->id, $dispatcher->id);
+    $staff      = userWithOnlyPermissions($this->organisation, ["orders.{$this->shop->id}.edit"]);
+    $send       = fn ($order, $organisation) => $this->patch(route('grp.models.order.state.in-other-warehouse', [$order->id, $organisation->id]));
+    $paid       = ['pay_status' => OrderPayStatusEnum::PAID];
+
+    try {
+        $order = $submit([[$products['at_zero'], 3]], $paid);
+        SendOrderToWarehouse::make()->action($order, []);
+        $notHeld = $submit([[$products['in_stock'], 1]]);
+        actingAsUserWithOnlyPermissions($staff, ["orders.{$this->shop->id}.edit"]);
+
+        $send($order, $this->organisation)->assertSessionHasErrors('cross_dispatch');
+        $send($notHeld, $dispatcher)->assertSessionHasErrors('cross_dispatch');
+        $order->updateQuietly(['data' => array_merge($order->fresh()->data ?? [], ['do_not_pick' => true])]);
+        $send($order, $dispatcher)->assertSessionHasErrors('cross_dispatch');
+        $order->updateQuietly(['data' => array_merge($order->fresh()->data ?? [], ['do_not_pick' => false])]);
+
+        $otherShop  = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), ['type' => ShopTypeEnum::DROPSHIPPING]));
+        $otherOrder = StoreOrder::make()->action(createCustomer($otherShop), []);
+        $otherOrder->updateQuietly(['state' => OrderStateEnum::SUBMITTED]);
+        $send($otherOrder, $dispatcher)->assertForbidden();
+        expect($order->fresh()->deliveryNotes()->count())->toBe(0)
+            ->and($notHeld->fresh()->deliveryNotes()->count())->toBe(0);
+
+        $send($order, $dispatcher)->assertSessionHasNoErrors();
+        expect($order->fresh()->deliveryNotes()->sole()->organisation_id)->toBe($dispatcher->id)
+            ->and(DB::table('orders')->where('id', $order->id)->value('data'))->not->toBe('[]');
+
+        $second = $submit([[$products['at_zero'], 2]], $paid);
+        SendOrderToWarehouse::make()->action($second, []);
+        expect($second->fresh()->state)->toBe(OrderStateEnum::SUBMITTED);
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => false]);
+        expect($second->fresh()->deliveryNotes()->sole()->organisation_id)->toBe($this->organisation->id);
+        $send($second, $dispatcher)->assertSessionHasErrors('cross_dispatch');
+    } finally {
+        actingAs($this->user);
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => true]);
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('a held order is re-routed once under its lock, only when paid, and loses its hold when sent back to the basket or cancelled', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this, ['only_elsewhere' => 'hold']);
+    $held = function (array $attributes = []) use ($submit, $products) {
+        $order = $submit([[$products['at_zero'], 3]], $attributes);
+        SendOrderToWarehouse::make()->action($order, []);
+
+        return $order->fresh();
+    };
+
+    try {
+        $unpaid = $held();
+        $paid   = $held(['pay_status' => OrderPayStatusEnum::PAID]);
+        $skos['at_zero']->fresh()->updateQuietly(['quantity_available' => 10]);
+
+        \App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse::run($unpaid);
+        \App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse::run($paid);
+        \App\Actions\Ordering\Order\UpdateState\RerouteOrderHeldForOtherWarehouse::run($paid);
+        expect($unpaid->fresh()->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and($paid->fresh()->deliveryNotes()->count())->toBe(1)
+            ->and($paid->fresh()->deliveryNotes()->sole()->organisation_id)->toBe($this->organisation->id);
+        $skos['at_zero']->fresh()->updateQuietly(['quantity_available' => 0]);
+
+        \App\Actions\Ordering\Order\UpdateState\SendOrderBackToBasket::make()->handle($unpaid->fresh());
+        expect(\Illuminate\Support\Arr::has($unpaid->fresh()->data ?? [], SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD))->toBeFalse();
+
+        $toCancel = $held();
+        \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($toCancel->fresh());
+        expect($toCancel->fresh()->state)->toBe(OrderStateEnum::CANCELLED)
+            ->and(\Illuminate\Support\Arr::has($toCancel->fresh()->data ?? [], SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD))->toBeFalse();
+
+        $waiting = $held(['pay_status' => OrderPayStatusEnum::PAID]);
+        expect($waiting->state)->toBe(OrderStateEnum::SUBMITTED);
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['stock_from_other_warehouses' => []]);
+        $waiting = $waiting->fresh();
+        expect($waiting->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and($waiting->deliveryNotes()->sole()->organisation_id)->toBe($this->organisation->id);
+    } finally {
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('a hold is never written over an order another send already took, and releasing one never leaves its data a list', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this);
+
+    try {
+        $order = $submit([[$products['at_zero'], 2]]);
+        $this->mock(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::class)->shouldReceive('handle')->andReturnUsing(function (\App\Models\Ordering\Order $order) {
+            $order->updateQuietly(['state' => OrderStateEnum::IN_WAREHOUSE]);
+
+            throw \Illuminate\Validation\ValidationException::withMessages(['cross_dispatch' => ['order state']]);
+        });
+        expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull();
+        $order = $order->fresh();
+        expect(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toBeNull()
+            ->and(\Illuminate\Support\Arr::has($order->data ?? [], SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD))->toBeFalse();
+        app()->forgetInstance(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::class);
+
+        $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings, ['stock_elsewhere' => ['only_elsewhere' => 'hold']])]);
+        $held = $submit([[$products['at_zero'], 2]]);
+        $held->updateQuietly(['data' => []]);
+        SendOrderToWarehouse::make()->action($held->fresh(), []);
+        expect(DB::table('orders')->where('id', $held->id)->value('data'))->toContain(SendOrderToWarehouse::OTHER_WAREHOUSE_HOLD);
+        $this->patch(route('grp.models.order.state.in-warehouse', [$held->id]), ['despite_hold' => true])->assertSessionHasNoErrors();
+        expect($held->fresh()->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and(DB::table('orders')->where('id', $held->id)->value('data'))->not->toBe('[]');
+    } finally {
+        app()->forgetInstance(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::class);
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('a held order goes home when home stock arrives, and to the other warehouse once it can ship it whole', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this, ['only_elsewhere' => 'hold']);
+    $stockIn = function (OrgStock $sko, float $quantity): void {
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($sko->organisation->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(orgStock: $sko, location: $location, modelData: ['quantity' => $quantity, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()], strict: false);
+    };
+
+    try {
+        $order = $submit([[$products['at_zero'], 3]], ['pay_status' => OrderPayStatusEnum::PAID]);
+        SendOrderToWarehouse::make()->action($order, []);
+        expect($order->fresh()->state)->toBe(OrderStateEnum::SUBMITTED);
+        $stockIn($skos['at_zero']->fresh(), 5);
+        $order = $order->fresh();
+        expect($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and($order->deliveryNotes()->sole()->organisation_id)->toBe($this->organisation->id);
+
+        $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings, ['stock_elsewhere' => ['only_elsewhere' => 'send']])]);
+        $theirSko = OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['pack']->stock_id)->sole();
+        $skos['pack']->fresh()->updateQuietly(['quantity_available' => 0]);
+        $stockIn($theirSko, 2);
+        $product = \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['six_per_sko']->fresh())->fresh();
+        expect([$product->available_quantity, $product->available_quantity_elsewhere])->toBe([12, 12]);
+        $short = $submit([[$products['six_per_sko'], 13]], ['pay_status' => OrderPayStatusEnum::PAID]);
+        SendOrderToWarehouse::make()->action($short, []);
+        expect($short->fresh()->state)->toBe(OrderStateEnum::SUBMITTED)
+            ->and(SendOrderToWarehouse::heldReason($short->fresh()->private_warehouse_note))->toContain('no single warehouse');
+
+        $stockIn($theirSko, 20);
+        $short = $short->fresh();
+        expect($short->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+            ->and($short->deliveryNotes()->sole()->organisation_id)->toBe($dispatcher->id);
+    } finally {
+        forgetShopRoutingToOtherWarehouse($this);
+    }
+});
+
+test('an order no other warehouse may take says why, and shop settings fall back to their defaults', function () {
+    [$products, $skos, $dispatcher, $submit] = shopRoutingToOtherWarehouse($this);
+    $isShopHydrate = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses::class);
+
+    try {
+        $order = $submit([[$products['at_zero'], 3]], ['to_be_paid_by' => OrderToBePaidByEnum::CASH_ON_DELIVERY]);
+        expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull()
+            ->and(SendOrderToWarehouse::heldReason($order->fresh()->private_warehouse_note))->toContain('paid on delivery')
+            ->and(collect(\App\Actions\Dispatching\CrossDispatch\RouteOrderToOtherWarehouse::make()->warehouseOptions($order->fresh()))->firstWhere('organisation.id', $dispatcher->id))->toMatchArray(['can_ship' => false, 'shortfall' => 'it is paid on delivery']);
+
+        $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings, ['stock_elsewhere' => ['only_elsewhere' => '', 'mixed' => null, 'marks_new' => '']])]);
+        $shop = $this->shop->fresh();
+        expect([$shop->stockElsewhereSetting('only_elsewhere'), $shop->stockElsewhereSetting('mixed'), $shop->stockElsewhereSetting('marks_new')])->toBe(['send', 'hold', false]);
+
+        \Illuminate\Support\Facades\Bus::fake([$isShopHydrate]);
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['stock_elsewhere_mixed' => 'home']);
+        \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $isShopHydrate);
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['stock_elsewhere_marks_new' => true]);
+        \Illuminate\Support\Facades\Bus::assertDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $isShopHydrate);
+    } finally {
+        forgetShopRoutingToOtherWarehouse($this);
     }
 });

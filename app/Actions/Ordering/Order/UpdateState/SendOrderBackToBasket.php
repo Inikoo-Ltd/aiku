@@ -43,6 +43,7 @@ class SendOrderBackToBasket extends OrgAction
             'state'  => OrderStateEnum::CREATING,
             'status' => OrderStatusEnum::CREATING
         ]);
+        SendOrderToWarehouse::forgetOtherWarehouseHold($order);
 
         if ($order->shop?->type == ShopTypeEnum::B2B) {
             // Patch for sending order back to basket. You did not update the customer current_order_in_basket_id previously Raul.

@@ -24,8 +24,9 @@ class RaiseCrossDispatchDeliveryNote
 
     /**
      * Raises the delivery note of a submitted order in another company's warehouse: the whole order or nothing.
-     * Internal only, no route reaches it. An order that already has a live note at home is refused here; taking it
-     * over from the home warehouse is a later step.
+     * Reached from SendOrderToWarehouse's routing (INI-485) and from staff through SendOrderToOtherWarehouse, which
+     * checks the shop's list and the office holds first. An order that already has a live note at home is refused here;
+     * taking it over from the home warehouse is a later step.
      *
      * @throws \Illuminate\Validation\ValidationException with the resolver's refusals
      * @throws \Throwable

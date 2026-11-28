@@ -85,6 +85,7 @@ import {
     faGift,
     faBan,
     faHandPaper,
+    faWarehouse,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -116,7 +117,7 @@ import CustomsExportLink from "@/Components/Warehouse/DeliveryNotes/CustomsExpor
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle, faGift, faBan, faHandPaper)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle, faGift, faBan, faHandPaper, faWarehouse)
 
 const EmailCustomerDialog = defineAsyncComponent(() => import("@/Components/Chat/EmailCustomerDialog.vue"))
 
@@ -146,7 +147,7 @@ const props = defineProps<{
     split_pre_order?: { reference: string, slug: string } | null
     e_invoice_dic_missing?: { name: string, parameters: (string | number)[] } | null
     aurora_notice?: string | null
-    send_to_warehouse_hold?: { reason: string, route: routeType } | null
+    send_to_warehouse_hold?: { reason: string, route: routeType, other_warehouses?: { name: string, can_ship: boolean, shortfall: string | null, route: routeType }[] } | null
     office_hold?: string | null
     production_review?: InstanceType<typeof ProductionReviewBar>['$props']['review'] | null
     basket_customer_balance?: number | string | null
@@ -1751,6 +1752,22 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @start="() => (sendDespiteHoldError = null)"
             @error="(errors: Record<string, string>) => (sendDespiteHoldError = Object.values(errors ?? {})[0] ?? ctrans('Could not send it, please try again'))"
         />
+        <div v-if="send_to_warehouse_hold.other_warehouses?.length" class="flex w-full flex-wrap items-center gap-2">
+            <template v-for="warehouse in send_to_warehouse_hold.other_warehouses" :key="warehouse.name">
+                <ButtonWithLink
+                    v-if="warehouse.can_ship"
+                    type="tertiary"
+                    icon="fal fa-warehouse"
+                    :label="ctrans('Send to :warehouse', { warehouse: warehouse.name })"
+                    :tooltip="ctrans(':warehouse can ship the whole order now', { warehouse: warehouse.name })"
+                    :routeTarget="warehouse.route"
+                    :isWithError="false"
+                    @start="() => (sendDespiteHoldError = null)"
+                    @error="(errors: Record<string, string>) => (sendDespiteHoldError = Object.values(errors ?? {})[0] ?? ctrans('Could not send it, please try again'))"
+                />
+                <span v-else class="text-xs text-amber-800">{{ ctrans(":warehouse cannot ship it whole: :shortfall", { warehouse: warehouse.name, shortfall: warehouse.shortfall ?? "" }) }}</span>
+            </template>
+        </div>
     </div>
 
     <div v-if="office_hold" class="m-3 flex flex-wrap items-center gap-4 rounded-lg border-2 border-amber-400 bg-amber-50 p-4 text-amber-900">

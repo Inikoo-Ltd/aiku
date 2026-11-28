@@ -18,7 +18,9 @@ use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote;
+use App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote;
 use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
+use App\Actions\Dispatching\CrossDispatch\RouteOrderToOtherWarehouse;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -54,6 +56,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Throwable;
 
 class SendOrderToWarehouse extends OrgAction
 {
@@ -72,6 +75,9 @@ class SendOrderToWarehouse extends OrgAction
     public const string SENT_DESPITE_HOLD_MARKER = 'Sent to the warehouse despite the hold';
 
     public const string TO_FILL_MARKER = 'Bottles still being filled by production:';
+
+    /** INI-485. Where in the order data a hold for another warehouse keeps its reason */
+    public const string OTHER_WAREHOUSE_HOLD = 'other_warehouse_hold';
 
     /** Set from the "Send anyway" button of the held bar: staff take responsibility for the missing bottles or SKOs (HELP-4969) */
     private bool $despiteHold = false;
@@ -274,6 +280,54 @@ class SendOrderToWarehouse extends OrgAction
         return (bool)Arr::get($shop->settings, 'orders.send_before_filled', true);
     }
 
+    /**
+     * INI-485 D1/D4. Raises the note in the other warehouse that can ship the order whole, or holds the order for staff
+     * with the reason. A refusal, or anything else going wrong, holds the order instead of reaching the payment that
+     * sent it here. False: the order goes home as today.
+     */
+    private function routeToOtherWarehouse(Order $order): DeliveryNote|null|false
+    {
+        $route = rescue(fn () => DB::transaction(fn () => RouteOrderToOtherWarehouse::run($order)));
+        if (!$route) {
+            return false;
+        }
+
+        if (isset($route['dispatcher'])) {
+            try {
+                return RaiseCrossDispatchDeliveryNote::run($order, $route['dispatcher']);
+            } catch (Throwable $exception) {
+                if (!$exception instanceof ValidationException) {
+                    report($exception);
+                }
+                $route = ['hold' => __(':warehouse could not take it, send it there or home: :reason', [
+                    'warehouse' => $route['dispatcher']->name,
+                    'reason'    => $exception instanceof ValidationException ? Arr::first(Arr::flatten($exception->errors())) : __('an error, the team has been notified'),
+                ])];
+            }
+        }
+
+        $order->refresh();
+        if ($order->state !== OrderStateEnum::SUBMITTED || $order->deliveryNotes()->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::CANCELLED)->exists()) {
+            return null;
+        }
+
+        $note = collect([self::withoutHeldNote($order->private_warehouse_note), self::HELD_MARKER.' '.$route['hold']])->filter()->implode(' — ');
+        $this->update($order, ['private_warehouse_note' => $note, 'data' => [self::OTHER_WAREHOUSE_HOLD => $route['hold']]], $order->data === null ? [] : ['data']);
+
+        return null;
+    }
+
+    /** Takes the hold for another warehouse off the order, leaving the rest of its data as it is now in the database */
+    public static function forgetOtherWarehouseHold(Order $order): void
+    {
+        if (!Arr::has($order->data ?? [], self::OTHER_WAREHOUSE_HOLD)) {
+            return;
+        }
+
+        Order::whereKey($order->id)->update(['data' => DB::raw("coalesce(data, '{}'::jsonb) - '".self::OTHER_WAREHOUSE_HOLD."'")]);
+        $order->setRawAttributes(array_merge($order->getAttributes(), ['data' => DB::table('orders')->where('id', $order->id)->value('data')]), true);
+    }
+
     private function sentDespiteHold(Order $order): bool
     {
         return $this->despiteHold || str_contains((string)$order->private_warehouse_note, self::SENT_DESPITE_HOLD_MARKER);
@@ -304,7 +358,7 @@ class SendOrderToWarehouse extends OrgAction
             return __('waiting for filling: :products', ['products' => $lines->map(fn ($line) => $line->transaction->model->code)->unique()->implode(', ')]);
         }
 
-        return null;
+        return Arr::get($order->data, self::OTHER_WAREHOUSE_HOLD);
     }
 
     /** Why the order is held, read from its warehouse note: "waiting for filling: FOKG-160-10ml" */
@@ -392,10 +446,19 @@ class SendOrderToWarehouse extends OrgAction
             return null;
         }
 
+        if (!$this->dispatcher && !$this->releaseFromGate && !$this->sentDespiteHold($order)
+            && (Arr::get($order->shop->settings, 'stock_from_other_warehouses') || Arr::has($order->data ?? [], self::OTHER_WAREHOUSE_HOLD))) {
+            $routed = $this->routeToOtherWarehouse($order);
+            if ($routed !== false) {
+                return $routed;
+            }
+        }
+
         /** Released: the warning goes, so it is not copied onto the delivery note the picker reads */
         if (str_contains((string)$order->private_warehouse_note, self::HELD_MARKER)) {
             $this->update($order, ['private_warehouse_note' => self::withoutHeldNote($order->private_warehouse_note)]);
         }
+        self::forgetOtherWarehouseHold($order);
 
         if (!$this->dispatcher
             && !$this->releaseFromGate
@@ -633,6 +696,22 @@ class SendOrderToWarehouse extends OrgAction
         $this->officeRelease = true;
         $this->initialisationFromShop($order->shop, $request);
 
+        if (Arr::has($order->data ?? [], self::OTHER_WAREHOUSE_HOLD)) {
+            return DB::transaction(function () use ($order, $request) {
+                $lockedOrder = RouteOrderToOtherWarehouse::lockStillHeld($order);
+
+                return $lockedOrder ? $this->sendFromController($lockedOrder, $request) : null;
+            });
+        }
+
+        return $this->sendFromController($order, $request);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    private function sendFromController(Order $order, ActionRequest $request): ?DeliveryNote
+    {
         $this->withoutAnAddress = (bool)Arr::pull($this->validatedData, 'without_an_address', false);
         $despiteHold            = (bool)Arr::pull($this->validatedData, 'despite_hold', false);
 

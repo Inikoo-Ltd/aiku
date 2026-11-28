@@ -376,11 +376,13 @@ class Product extends Model implements Auditable, HasMedia
     }
 
     /**
-     * INI-485 D6. Sold only from another company's warehouse: such stock sells the product but never makes it new.
+     * INI-485 D6. Sold only from another company's warehouse: such stock sells the product but makes it new only when the shop says so.
      */
     public function isStockedOnlyElsewhere(): bool
     {
-        return $this->available_quantity_elsewhere > 0 && $this->available_quantity <= $this->available_quantity_elsewhere;
+        return $this->available_quantity_elsewhere > 0
+            && $this->available_quantity <= $this->available_quantity_elsewhere
+            && !$this->shop->stockElsewhereSetting('marks_new');
     }
     public function searchIndexShouldBeUpdated(): bool
     {
