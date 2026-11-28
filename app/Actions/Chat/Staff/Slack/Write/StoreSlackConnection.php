@@ -34,6 +34,12 @@ class StoreSlackConnection
     {
         $state = $request->session()->pull(StartSlackConnection::STATE_KEY);
         $error = $this->handle($request->user(), $state, $request->query('state'), $request->query('code'), $request->query('error'));
+        if ($state['back_to_verba'] ?? false) {
+            RecordVerbaJoinEvent::run($request->user()->id, $error ? ($request->query('error') ? 'slack_declined' : 'failed') : 'connected');
+            if (!$error) {
+                return redirect()->route('grp.chat.staff.index');
+            }
+        }
 
         return StartSlackConnection::backToSettings(
             $error ? StartSlackConnection::ERROR_KEY : StartSlackConnection::NOTICE_KEY,

@@ -510,6 +510,56 @@ test('private conversations need a second yes: the opt-in asks Slack for the pri
         ->and(DB::table('slack_private_consents')->where('user_id', $user->id)->orderBy('id')->pluck('event')->all())->toBe(['granted', 'lapsed']);
 });
 
+test('Verba asks every staff member to connect all their Slack in one go before it opens; only someone with no Slack person linked may say they are not in Slack', function () {
+    \Illuminate\Support\Facades\Cache::forget('slack_workspace_name:main');
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Http::fake(['slack.com/api/team.info' => Http::response(['ok' => true, 'team' => ['name' => 'Our Workspace']])]);
+    $user     = ($this->makeUser)();
+    $unlinked = ($this->makeUser)(linked: false);
+    expect(SlackWriteAccess::joinPending($unlinked)['linked'])->toBeFalse()
+        ->and(SlackWriteAccess::joinPending($unlinked)['company'])->toBe('Our Workspace');
+    $reference = actingAs($unlinked)->post(route('grp.chat.staff.slack.connect.ask-link'))->assertOk()->json('reference');
+    expect($reference)->toStartWith('HELP-')
+        ->and(actingAs($unlinked)->post(route('grp.chat.staff.slack.connect.ask-link'))->json('reference'))->toBe($reference)
+        ->and(\App\Models\Helpers\Ticket::where('reference', $reference)->first()->reporter_id)->toBe($unlinked->id);
+    actingAs($unlinked)->patch(route('grp.models.profile.update'), ['verba_no_slack' => true])->assertSessionHasNoErrors();
+    expect(SlackWriteAccess::joinPending($unlinked->refresh()))->toBeNull();
+
+    $user->forceFill(['settings' => ['verba_no_slack' => true]])->save();
+    expect(SlackWriteAccess::joinPending($user))->toBe([
+            'linked'          => true,
+            'company'         => 'Our Workspace',
+            'consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION,
+            'terms_version'   => SlackWriteAccess::PRIVATE_TERMS_VERSION,
+            'start_route'     => ['name' => 'grp.chat.staff.slack.connect.private.start'],
+        ]);
+
+    $response = actingAs($user)->withHeaders(['X-Inertia' => 'true'])->post(route('grp.chat.staff.slack.connect.private.start'), [
+        'understood' => true, 'back_to_verba' => true, 'consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION, 'terms_version' => SlackWriteAccess::PRIVATE_TERMS_VERSION,
+    ]);
+    test()->flushHeaders();
+    parse_str((string) parse_url($response->headers->get('X-Inertia-Location'), PHP_URL_QUERY), $query);
+    Http::fake(['slack.com/api/oauth.v2.access' => Http::response(['ok' => true, 'team' => ['id' => 'TOURTEAM'], 'authed_user' => [
+        'id' => ($this->slackIdOf)($user), 'scope' => implode(',', [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES]), 'access_token' => $this->token, 'token_type' => 'user',
+    ]])]);
+    \Illuminate\Support\Facades\Queue::fake();
+    actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-v', 'state' => $query['state']]))
+        ->assertRedirect(route('grp.chat.staff.index'));
+
+    expect(SlackWriteAccess::joinPending($user))->toBeNull();
+
+    actingAs($user)->post(route('grp.chat.staff.slack.connect.event'), ['event' => 'shown'])->assertNoContent();
+    actingAs($user)->post(route('grp.chat.staff.slack.connect.event'), ['event' => 'shown'])->assertNoContent();
+    actingAs($user)->postJson(route('grp.chat.staff.slack.connect.event'), ['event' => 'anything'])->assertUnprocessable();
+    expect(DB::table('verba_join_usage')->where('user_id', $user->id)->pluck('count', 'event')->all())->toEqual(['shown' => 2, 'agreed' => 1, 'connected' => 1])
+        ->and(DB::table('verba_join_usage')->where('user_id', $unlinked->id)->pluck('count', 'event')->all())->toEqual(['asked_link' => 2, 'not_in_slack' => 1]);
+
+    actingAs($user)->post(route('grp.chat.staff.slack.connect.event'), ['event' => 'policy_opened'])->assertNoContent();
+    actingAs($this->user)->get(route('grp.chat.staff.reports'))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('joining_summary', ['shown' => 1, 'policy_opened' => 1, 'later' => 0, 'connected' => 1, 'not_in_slack' => 1, 'asked_link' => 1])
+        ->has('joining.data', 2));
+});
+
 test('declining the private opt-in in Slack changes nothing and says so', function () {
     $user       = ($this->makeUser)();
     $connection = ($this->connect)($user);

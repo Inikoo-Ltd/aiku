@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Slack;
 
 use App\Models\Chat\SlackChannel;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -97,6 +98,20 @@ final readonly class SlackWorkspace
     public function client(): ?PendingRequest
     {
         return $this->botToken !== '' ? Http::withToken($this->botToken)->baseUrl('https://slack.com/api') : null;
+    }
+
+    /**
+     * The workspace's name as people see it in Slack, asked from Slack once a day; null when Slack cannot say.
+     */
+    public function displayName(): ?string
+    {
+        return $this->name ?? Cache::remember('slack_workspace_name:'.($this->teamId ?? 'main'), now()->addDay(), function () {
+            try {
+                return $this->client()?->timeout(2)->get('team.info')->json('team.name');
+            } catch (\Throwable) {
+                return null;
+            }
+        });
     }
 
     /**

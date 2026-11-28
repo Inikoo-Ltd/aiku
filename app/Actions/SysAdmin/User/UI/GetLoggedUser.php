@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\User\UI;
 
 use App\Actions\Chat\Staff\StaffChatWallpaper;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Actions\Chat\ChatSession\GetChatLanguagesRead;
 use App\Models\Helpers\Language;
 use App\Actions\SysAdmin\User\BorrowUserPermissions;
@@ -55,6 +56,7 @@ class GetLoggedUser
             'borrowed_permissions_from' => $helping ? null : $user->permissionsLender()?->only(['id', 'username', 'contact_name']),
             'can_borrow_permissions'    => !$helping && BorrowUserPermissions::canBorrowSomebody($user),
             'help'                      => $this->help($user, $helping),
+            'verba_slack_join'          => SlackWriteAccess::joinPending($user),
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
             'chat_alert_shops' => $isAgent ? $this->chatAlertShopIdsFor($user, $agentShops) : [],

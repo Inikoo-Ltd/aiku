@@ -27,6 +27,8 @@ import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/Desk
 import NewVerbrationDialog from "@/Components/Messaging/NewVerbrationDialog.vue"
 import SlackChannelDirectoryDialog from "@/Components/Messaging/Slack/SlackChannelDirectoryDialog.vue"
 import VerbaHome from "@/Components/Messaging/VerbaHome.vue"
+import VerbaJoinCard from "@/Components/Messaging/VerbaJoinCard.vue"
+import { useVerbaJoin } from "@/Composables/useVerbaJoin"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SlackPrivateConsentDialog from "@/Components/Forms/Fields/SlackPrivateConsentDialog.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
@@ -439,6 +441,7 @@ watch([() => (showSlackChannel.value ? props.slack_channel?.id : null), selected
     if ((opensPublic && deskKind.value === "private") || (opensPrivate && deskKind.value === "public")) deskKind.value = "all"
 }, { immediate: true })
 const isFeed = computed(() => currentRouteName.value === "grp.chat.staff.feed")
+const { slackJoin, mustJoin } = useVerbaJoin()
 const homeTab = computed(() => (isChannelsTab.value ? "desks" : "directs"))
 const isNothingSelected = computed(() => !selectedUlid.value && !showSlackChannel.value)
 const homeRoute = computed(() => route(isGroupsRoute.value ? "grp.chat.staff.groups.index" : isChannelsTab.value ? "grp.chat.staff.slack.index" : "grp.chat.staff.index"))
@@ -564,8 +567,9 @@ onUnmounted(() => {
     <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh_-_2.75rem_-_var(--desk-footer,0px))] lg:h-[calc(100dvh_-_2.5rem_-_var(--desk-footer,0px))] font-desk text-[15px]" :style="{ '--desk-footer': footerHeight + 'px' }">
         <div
             class="relative shrink-0 bg-[var(--desk-sidebar)] md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out"
-            :class="[selectedUlid || showSlackChannel || isFeed ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
+            :class="[mustJoin || selectedUlid || showSlackChannel || isFeed ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
             <nav
+                v-if="!mustJoin"
                 class="flex h-full w-full md:w-64 flex-col bg-[var(--desk-sidebar)] text-[var(--desk-text)] md:transition-opacity md:duration-200"
                 :class="isSidebarCollapsed && 'md:pointer-events-none md:opacity-0'"
                 :inert="(isSidebarCollapsed && !isMobile) || undefined"
@@ -804,6 +808,7 @@ onUnmounted(() => {
             </nav>
     
             <nav
+                v-if="!mustJoin"
                 class="absolute inset-y-0 left-0 hidden w-14 flex-col items-center bg-[var(--desk-sidebar)] text-[var(--desk-text)] transition-opacity duration-200 md:flex"
                 :class="!isSidebarCollapsed && 'pointer-events-none opacity-0'"
                 :inert="!isSidebarCollapsed || undefined"
@@ -888,6 +893,7 @@ onUnmounted(() => {
         </div>
 
         <button
+            v-if="!mustJoin"
             type="button"
             class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-[var(--desk-strong)] md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
@@ -898,8 +904,9 @@ onUnmounted(() => {
             <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none transition-transform duration-300" :class="isSidebarCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />
         </button>
 
-        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="isFeed || selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
-            <VerbaHome v-if="isFeed" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
+        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="mustJoin || isFeed || selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
+            <VerbaJoinCard v-if="mustJoin && slackJoin" :join="slackJoin" />
+            <VerbaHome v-else-if="isFeed" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
             <MessagingConversation
                 v-else-if="selectedConversation"
                 :conversation="selectedConversation"

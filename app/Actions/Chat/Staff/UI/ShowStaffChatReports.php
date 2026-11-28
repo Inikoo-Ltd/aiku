@@ -12,6 +12,8 @@ use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\InertiaTable\InertiaTable;
 use App\Models\Chat\SlackChannel;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
@@ -306,6 +308,70 @@ class ShowStaffChatReports extends OrgAction
             ->withQueryString();
     }
 
+    public const array JOIN_EVENTS = ['shown', 'policy_opened', 'later', 'connected', 'not_in_slack', 'asked_link'];
+
+    /**
+     * How many people reached each step of the Verba join page, since it started.
+     *
+     * @return array<string, int>
+     */
+    public function joiningSummary(Group $group): array
+    {
+        $people = DB::table('verba_join_usage')
+            ->join('users', 'users.id', '=', 'verba_join_usage.user_id')
+            ->where('users.group_id', $group->id)
+            ->groupBy('verba_join_usage.event')
+            ->selectRaw('verba_join_usage.event, count(distinct verba_join_usage.user_id) as people')
+            ->pluck('people', 'event');
+
+        return collect(self::JOIN_EVENTS)->mapWithKeys(fn (string $event) => [$event => (int) ($people[$event] ?? 0)])->all();
+    }
+
+    /**
+     * Each person who reached the Verba join page: how often they saw it, read the privacy policy or chose Later, and how it ended.
+     */
+    public function joining(Group $group, string $prefix = 'joining'): LengthAwarePaginator
+    {
+        InertiaTable::updateQueryBuilderParameters($prefix);
+
+        $usage = fn ($query) => $query->from('verba_join_usage')->whereColumn('verba_join_usage.user_id', 'users.id');
+        $times = fn (string $event) => fn ($query) => $usage($query)->where('verba_join_usage.event', $event)->selectRaw('coalesce(sum(verba_join_usage.count), 0)::int');
+
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(fn ($where) => $where->whereStartWith('users.contact_name', $value)->orWhereStartWith('users.username', $value));
+        });
+
+        return QueryBuilder::for(User::class)
+            ->where('users.group_id', $group->id)
+            ->whereExists($usage)
+            ->select(['users.id', 'users.username', 'users.contact_name'])
+            ->selectSub($times('shown'), 'shown')
+            ->selectSub($times('policy_opened'), 'policy_opened')
+            ->selectSub($times('later'), 'later')
+            ->selectSub(fn ($query) => $usage($query)->selectRaw("case when bool_or(verba_join_usage.event = 'connected') then 'connected' when bool_or(verba_join_usage.event = 'not_in_slack') then 'not_in_slack' when bool_or(verba_join_usage.event = 'asked_link') then 'asked_link' else 'not_yet' end"), 'outcome')
+            ->selectSub(fn ($query) => $usage($query)->selectRaw('max(verba_join_usage.date)'), 'last_seen')
+            ->defaultSort('-last_seen')
+            ->allowedSorts(['contact_name', 'shown', 'policy_opened', 'later', 'outcome', 'last_seen'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
+            ->withQueryString();
+    }
+
+    public function joiningTableStructure(string $prefix = 'joining'): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            $table->name($prefix)->pageName($prefix.'Page')
+                ->withGlobalSearch()
+                ->column(key: 'contact_name', label: __('Person'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'outcome', label: __('Status'), canBeHidden: false, sortable: true)
+                ->column(key: 'shown', label: __('Saw the page'), sortable: true, align: 'right')
+                ->column(key: 'policy_opened', label: __('Read the privacy policy'), sortable: true, align: 'right')
+                ->column(key: 'later', label: __('Chose Not now'), sortable: true, align: 'right')
+                ->column(key: 'last_seen', label: __('Last seen'), sortable: true, align: 'right')
+                ->defaultSort('-last_seen');
+        };
+    }
+
     public function tableStructure(string $prefix = 'people'): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
@@ -330,8 +396,9 @@ class ShowStaffChatReports extends OrgAction
         $report = $this->handle($group, $this->days, $this->by);
         $window = $this->window($this->days);
         $title  = __('Verba analytics');
+        $seesJoining = Ticket::canBeManagedBy($request->user()) || $request->user()->roles->where('name', RolesEnum::GROUP_ADMIN->value)->isNotEmpty();
 
-        return Inertia::render(
+        $response = Inertia::render(
             'Chat/StaffChatReports',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
@@ -343,8 +410,12 @@ class ShowStaffChatReports extends OrgAction
                 'periods'     => self::PERIODS,
                 'report'      => $report,
                 'people'      => JsonResource::collection($this->people($group, $window['from'], $window['to'])),
+                'joining'     => $seesJoining ? JsonResource::collection($this->joining($group)) : null,
+                'joining_summary' => $seesJoining ? $this->joiningSummary($group) : null,
             ]
         )->table($this->tableStructure());
+
+        return $seesJoining ? $response->table($this->joiningTableStructure()) : $response;
     }
 
     public function getBreadcrumbs(): array

@@ -81,7 +81,7 @@ class StartSlackConnection
      * @param  list<string>  $scopes
      * @param  array{consent_version: string, terms_version: string}|null  $private
      */
-    public static function authorizeUrl(User $user, array $scopes, ?array $private = null, ?string $notice = null, ?SlackWorkspace $workspace = null): string
+    public static function authorizeUrl(User $user, array $scopes, ?array $private = null, ?string $notice = null, ?SlackWorkspace $workspace = null, bool $backToVerba = false): string
     {
         $workspace ??= SlackWorkspace::main();
         $state = Str::random(48);
@@ -92,6 +92,7 @@ class StartSlackConnection
             'private'    => $private,
             'notice'     => $notice,
             'team_id'    => $workspace->teamId,
+            'back_to_verba' => $backToVerba,
         ]);
 
         return 'https://slack.com/oauth/v2/authorize?'.http_build_query([

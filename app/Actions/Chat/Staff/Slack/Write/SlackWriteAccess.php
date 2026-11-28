@@ -10,7 +10,9 @@ namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 
 class SlackWriteAccess
 {
@@ -53,11 +55,11 @@ class SlackWriteAccess
 
     /**
      * Versions of the consent text and small print (INI-427 v5.5, comments 36856 and the part 2 after it).
-     * Change them together with the texts in SlackPrivateConsentDialog.vue.
+     * Change them together with the texts in SlackConsentDetails.vue.
      */
     public const string PRIVATE_CONSENT_VERSION = 'v5.5';
 
-    public const string PRIVATE_TERMS_VERSION = 'v5.5';
+    public const string PRIVATE_TERMS_VERSION = 'v5.6';
 
     /**
      * Launch gate (INI-429): opened by Raul on 26 Nov 2026, managers were already asked to join.
@@ -74,6 +76,32 @@ class SlackWriteAccess
     public static function allows(User $user): bool
     {
         return $user->status && SlackChannel::userMayReadPublicChannels($user);
+    }
+
+    /**
+     * Verba opens only after a staff member has agreed and connected all their Slack in one go. The only way past without it
+     * is to say they are not in the company's Slack, which counts only while no Slack person is linked to them. Null when they may go in.
+     *
+     * @return array{linked: bool, company: string, consent_version: string, terms_version: string, start_route: array{name: string}}|null
+     */
+    public static function joinPending(User $user): ?array
+    {
+        if (!$user->status || $user->worksOnlyForAgents() || !self::privateOptInOpen()
+            || !app()->environment(self::WRITE_ENVIRONMENTS) || !StartSlackConnection::isConfigured()) {
+            return null;
+        }
+        $linked = SlackWorkspace::main()->personOf($user) !== null;
+        if ($linked ? SlackConnection::main()->where('user_id', $user->id)->first()?->hasPrivateConsent() : Arr::get($user->settings, 'verba_no_slack')) {
+            return null;
+        }
+
+        return [
+            'linked'          => $linked,
+            'company'         => SlackWorkspace::main()->displayName() ?? (string) $user->group?->name,
+            'consent_version' => self::PRIVATE_CONSENT_VERSION,
+            'terms_version'   => self::PRIVATE_TERMS_VERSION,
+            'start_route'     => ['name' => 'grp.chat.staff.slack.connect.private.start'],
+        ];
     }
 
     public static function reasonUnavailable(User $user, ?\App\Actions\Chat\Staff\Slack\SlackWorkspace $workspace = null): ?string

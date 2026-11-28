@@ -11,6 +11,7 @@ import { faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAl
 import { library, type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
 import { ref } from "vue"
+import { useVerbaJoin } from "@/Composables/useVerbaJoin"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
@@ -23,6 +24,7 @@ const faSquareCompass = {
 library.add(faSquareCompass, faTvRetro, falClock, falPencil, faDrawSquare, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog, faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAlt, faFileInvoiceDollar, faPiggyBank);
 
 const layoutStore = useLayoutStore();
+const { mustJoin } = useVerbaJoin();
 
 const props = defineProps<{
     subSections: SubSection[]
@@ -62,7 +64,7 @@ const getTooltip = (subSection: SubSection) => {
 </script>
 
 <template>
-    <template v-for="(subSection, idxSubSec) in subSections">
+    <template v-for="(subSection, idxSubSec) in (mustJoin ? [] : subSections)">
         <div
             v-if="subSection?.parts?.length"
             class="relative text-gray-700 text-sm flex justify-end items-center gap-x-1 px-3 md:px-4 lg:px-4"

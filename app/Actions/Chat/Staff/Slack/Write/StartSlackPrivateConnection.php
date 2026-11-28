@@ -35,6 +35,7 @@ class StartSlackPrivateConnection
             'understood'      => ['required', 'accepted'],
             'consent_version' => ['required', 'string', Rule::in([SlackWriteAccess::PRIVATE_CONSENT_VERSION])],
             'terms_version'   => ['required', 'string', Rule::in([SlackWriteAccess::PRIVATE_TERMS_VERSION])],
+            'back_to_verba'   => ['sometimes', 'boolean'],
         ];
     }
 
@@ -56,10 +57,15 @@ class StartSlackPrivateConnection
             return StartSlackConnection::backToSettings(StartSlackConnection::ERROR_KEY, $reason);
         }
 
+        if ($request->boolean('back_to_verba')) {
+            RecordVerbaJoinEvent::run($request->user()->id, 'agreed');
+        }
+
         return Inertia::location(StartSlackConnection::authorizeUrl(
             $request->user(),
             [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES],
-            ['consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION, 'terms_version' => SlackWriteAccess::PRIVATE_TERMS_VERSION]
+            ['consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION, 'terms_version' => SlackWriteAccess::PRIVATE_TERMS_VERSION],
+            backToVerba: $request->boolean('back_to_verba')
         ));
     }
 }

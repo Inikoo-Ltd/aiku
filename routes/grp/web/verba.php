@@ -74,6 +74,8 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
         Route::delete('/slack-connect', \App\Actions\Chat\Staff\Slack\Write\DisconnectSlackAccount::class)->name('slack.connect.delete');
         Route::post('/slack-connect/private', \App\Actions\Chat\Staff\Slack\Write\StartSlackPrivateConnection::class)->name('slack.connect.private.start');
         Route::delete('/slack-connect/private', \App\Actions\Chat\Staff\Slack\Write\WithdrawSlackPrivateConsent::class)->name('slack.connect.private.delete');
+        Route::post('/slack-connect/ask-link', \App\Actions\Chat\Staff\Slack\Write\RequestSlackLink::class)->name('slack.connect.ask-link');
+        Route::post('/slack-connect/event', \App\Actions\Chat\Staff\Slack\Write\RecordVerbaJoinEvent::class)->withoutMiddleware('throttle:10,1,slack-connect')->middleware('throttle:60,1')->name('slack.connect.event');
     });
     Route::post('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\SendSlackMessage::class)->middleware('throttle:20,1,slack-send')->name('slack.messages.store');
     Route::post('/slack/{slackChannel}/files', \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::class)->middleware('throttle:60,1,slack-upload')->name('slack.files.upload');

@@ -69,6 +69,8 @@ const props = defineProps<{
 		series: Record<"messages" | "people" | "slack_messages" | "slack_people" | "calls" | "answered" | "missed" | "talk_minutes", number[]> & { buckets: string[] }
 	}
 	people: object
+	joining: object | null
+	joining_summary: null | Record<"shown" | "policy_opened" | "later" | "connected" | "not_in_slack" | "asked_link", number>
 }>()
 
 const VERBA = "#7c5cff"
@@ -118,6 +120,29 @@ const verbaShare = computed(() => {
 	const total = current.value.messages + current.value.slack_messages
 	return total ? Math.round((current.value.messages / total) * 100) : null
 })
+
+const joiningCards = computed(() => !props.joining_summary ? [] : [
+	{ key: "shown", label: ctrans("Saw the join page"), value: props.joining_summary.shown },
+	{ key: "policy_opened", label: ctrans("Read the privacy policy"), value: props.joining_summary.policy_opened },
+	{ key: "later", label: ctrans("Chose Not now"), value: props.joining_summary.later },
+	{ key: "connected", label: ctrans("Connected"), value: props.joining_summary.connected },
+	{ key: "not_in_slack", label: ctrans("Not in Slack"), value: props.joining_summary.not_in_slack },
+	{ key: "asked_link", label: ctrans("Asked to be linked"), value: props.joining_summary.asked_link },
+])
+
+const outcomeLabel = (outcome: string) => ({
+	connected: ctrans("Connected"),
+	not_in_slack: ctrans("Not in Slack"),
+	asked_link: ctrans("Asked to be linked"),
+	not_yet: ctrans("Not yet"),
+} as Record<string, string>)[outcome] ?? outcome
+
+const outcomeClass = (outcome: string) => ({
+	connected: "text-green-700",
+	not_in_slack: "text-gray-600",
+	asked_link: "text-amber-700",
+	not_yet: "text-red-600",
+} as Record<string, string>)[outcome] ?? ""
 
 const cards = computed(() => [
 	{ key: "messages", label: ctrans("Verbs sent"), icon: "fal fa-comments", value: locale.number(current.value.messages), change: change(current.value.messages, previous.value.messages), note: ctrans(":count chats", { count: current.value.conversations }) },
@@ -319,6 +344,25 @@ const chatFacts = computed(() => [
 						</dl>
 					</div>
 				</div>
+			</div>
+
+			<div v-if="joining_summary && joining">
+				<h3 class="text-sm font-semibold text-gray-800">{{ ctrans("Joining Verba") }}</h3>
+				<p class="text-xs text-gray-500">{{ ctrans("People who reached the Connect your Slack page, since it started") }}</p>
+				<div class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+					<div v-for="card in joiningCards" :key="card.key" class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+						<div class="truncate text-xs text-gray-500">{{ card.label }}</div>
+						<div class="mt-1 text-2xl font-semibold tabular-nums text-gray-900">{{ locale.number(card.value) }}</div>
+					</div>
+				</div>
+				<Table :resource="joining" name="joining" class="mt-3">
+					<template #cell(outcome)="{ item }">
+						<span :class="outcomeClass(item.outcome)">{{ outcomeLabel(item.outcome) }}</span>
+					</template>
+					<template #cell(last_seen)="{ item }">
+						<span class="tabular-nums">{{ useFormatTime(item.last_seen, { formatTime: "d MMM" }) }}</span>
+					</template>
+				</Table>
 			</div>
 
 			<div>
